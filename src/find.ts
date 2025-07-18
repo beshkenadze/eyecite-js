@@ -698,7 +698,7 @@ function extractMultipleLawCitations(document: Document, index: number): FullLaw
   citations.push(baseCitation)
   
   // Then look for additional sections
-  let match
+  let match: RegExpExecArray | null
   while ((match = additionalSectionsPattern.exec(afterToken)) !== null) {
     const sectionNumber = match[1]
     const parenthetical = match[2]
@@ -842,7 +842,7 @@ function extractLawCitation(document: Document, index: number): FullLawCitation 
     
     const searchText = afterToken.substring(searchStart)
     const parenPattern = /\(([^)]+)\)/g
-    let match
+    let match: RegExpExecArray | null
     const parentheticals = []
     while ((match = parenPattern.exec(searchText)) !== null) {
       parentheticals.push(match[1])
