@@ -17,11 +17,11 @@ export class Reporter implements ReporterInterface {
     citeType: string,
     name: string,
     shortName: string,
-    editionName: string,
-    start?: string,
-    end?: string,
+    _editionName: string,
+    _start?: string,
+    _end?: string,
     isScotus = false,
-    mlzJurisdiction: string[] = [],
+    _mlzJurisdiction: string[] = [],
   ) {
     this.citeType = citeType
     this.name = name

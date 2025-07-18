@@ -1,8 +1,7 @@
 import type { CitationBase } from './models'
 import { getCitations } from './find'
-import { parseDocument, DomHandler } from 'htmlparser2'
+import { parseDocument } from 'htmlparser2'
 import type { Node, Element, Text } from 'domhandler'
-import { textContent } from 'domutils'
 
 // Type definitions
 export interface AnnotationOptions {
@@ -13,13 +12,13 @@ export interface AnnotationOptions {
   // Citations to annotate (if not provided, will extract from text)
   citations?: CitationBase[]
   // Tokenizer to use for citation extraction
-  tokenizer?: any
+  tokenizer?: { tokenize: (text: string) => [unknown[], unknown[]] }
 }
 
 /**
  * Default annotation function - wraps citation in a span with class "citation"
  */
-function defaultAnnotateFunc(citation: CitationBase, text: string): string {
+function defaultAnnotateFunc(_citation: CitationBase, text: string): string {
   return `<span class="citation">${text}</span>`
 }
 
@@ -41,7 +40,6 @@ export function annotateCitations(
   
   const {
     annotateFunc = defaultAnnotateFunc,
-    unbalancedTags = [],
     citations = getCitations(plainText, false, options.tokenizer),
   } = options
 
@@ -54,7 +52,7 @@ export function annotateCitations(
 
   // Apply annotations
   let result = plainText
-  let offset = 0
+  const _offset = 0
 
   // Keep track of changes for HTML handling
   const changes: Array<{ start: number; end: number; replacement: string }> = []
@@ -118,16 +116,16 @@ function serializeNode(node: Node): string {
     return html
   } else if (node.type === 'root') {
     let html = ''
-    if ((node as any).children) {
-      for (const child of (node as any).children) {
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
         html += serializeNode(child)
       }
     }
     return html
   } else if (node.type === 'comment') {
-    return `<!--${(node as any).data}-->`
+    return `<!--${'data' in node ? node.data : ''}-->`
   } else if (node.type === 'directive') {
-    return `<${(node as any).data}>`
+    return `<${'data' in node ? node.data : ''}>`
   }
   
   return ''
@@ -146,7 +144,6 @@ export function annotateCitationsHtml(
 ): string {
   const {
     annotateFunc = defaultAnnotateFunc,
-    unbalancedTags = [],
     citations,
     tokenizer,
   } = options
@@ -159,7 +156,7 @@ export function annotateCitationsHtml(
 
   // First pass: extract plain text from non-skip elements
   const plainTextParts: Array<{ text: string; node: Node; inSkipTag: boolean }> = []
-  let plainTextOffset = 0
+  const _plainTextOffset = 0
   
   function extractText(node: Node, inSkipTag = false): void {
     if (node.type === 'text') {
@@ -174,8 +171,8 @@ export function annotateCitationsHtml(
           extractText(child, shouldSkip)
         }
       }
-    } else if (node.type === 'root' && (node as any).children) {
-      for (const child of (node as any).children) {
+    } else if (node.type === 'root' && 'children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
         extractText(child, false)
       }
     }

@@ -1,4 +1,5 @@
 import { parseDocument } from 'htmlparser2'
+import type { Node } from 'domhandler'
 
 type CleaningStep = string | ((text: string) => string)
 
@@ -47,7 +48,7 @@ export function html(htmlContent: string): string {
   // Extract text recursively
   const textNodes: string[] = []
   
-  function extractText(node: any): void {
+  function extractText(node: Node): void {
     if (node.type === 'text') {
       // Check if any parent is a skip tag
       let parent = node.parent

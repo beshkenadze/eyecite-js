@@ -40,14 +40,14 @@ export interface Court {
 }
 
 // Export the actual data with proper types
-export const REPORTERS: Record<string, Reporter[]> = reportersData as any
-export const COURTS: Court[] = courtsData as any
-export const STATE_ABBREVIATIONS: Record<string, string> = stateAbbreviationsData as any
-export const CASE_NAME_ABBREVIATIONS: Record<string, string[]> = caseNameAbbreviationsData as any
+export const REPORTERS: Record<string, Reporter[]> = reportersData as Record<string, Reporter[]>
+export const COURTS: Court[] = courtsData as Court[]
+export const STATE_ABBREVIATIONS: Record<string, string> = stateAbbreviationsData as Record<string, string>
+export const CASE_NAME_ABBREVIATIONS: Record<string, string[]> = caseNameAbbreviationsData as Record<string, string[]>
 
 // Additional databases (empty for now, can be populated if needed)
-export const LAWS: Record<string, any> = {}
-export const JOURNALS: Record<string, any> = {}
+export const LAWS: Record<string, unknown> = {}
+export const JOURNALS: Record<string, unknown> = {}
 
 // Raw regex variables
 export const RAW_REGEX_VARIABLES: Record<string, string> = {
@@ -58,7 +58,7 @@ export const RAW_REGEX_VARIABLES: Record<string, string> = {
 
 // Build variations mapping
 export const VARIATIONS_ONLY: Record<string, string> = {}
-for (const [reporter, configs] of Object.entries(REPORTERS)) {
+for (const [_reporter, configs] of Object.entries(REPORTERS)) {
   for (const config of configs) {
     if (config.variations) {
       Object.assign(VARIATIONS_ONLY, config.variations)
@@ -68,7 +68,7 @@ for (const [reporter, configs] of Object.entries(REPORTERS)) {
 
 // Build editions mapping
 export const EDITIONS: Record<string, Reporter> = {}
-for (const [reporter, configs] of Object.entries(REPORTERS)) {
+for (const [_reporter, configs] of Object.entries(REPORTERS)) {
   for (const config of configs) {
     for (const edition of Object.keys(config.editions)) {
       EDITIONS[edition] = config

@@ -1,6 +1,6 @@
 import { test } from 'bun:test'
 import { ID_REGEX, SUPRA_REGEX } from '../src/regexes'
-import { AhocorasickTokenizer, defaultTokenizer } from '../src/tokenizers'
+import { defaultTokenizer } from '../src/tokenizers'
 
 test('debug supra regex', () => {
   console.log('SUPRA_REGEX:', SUPRA_REGEX)

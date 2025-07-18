@@ -1,7 +1,5 @@
 import type {
   CitationBase,
-  FullCaseCitation,
-  FullCitation,
   IdCitation,
   ReferenceCitation,
   ResourceType,
@@ -10,7 +8,7 @@ import type {
 } from './models'
 import { 
   Resource, 
-  FullCitation,
+  type FullCitation,
   FullCaseCitation,
   FullLawCitation,
   FullJournalCitation,
@@ -344,7 +342,7 @@ export function resolveCitations(
       if (!resolutions.has(resolution)) {
         resolutions.set(resolution, [])
       }
-      resolutions.get(resolution)!.push(citation)
+      resolutions.get(resolution)?.push(citation)
     }
   }
 

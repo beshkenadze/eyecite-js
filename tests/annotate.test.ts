@@ -53,7 +53,7 @@ describe('Annotate Citations', () => {
     test('should support custom annotation function', () => {
       const text = 'See 1 U.S. 1.'
       const annotated = annotateCitations(text, {
-        annotateFunc: (citation, text) => `[CITE: ${text}]`
+        annotateFunc: (_citation, text) => `[CITE: ${text}]`
       })
       expect(annotated).toBe('See [CITE: 1 U.S. 1].')
     })

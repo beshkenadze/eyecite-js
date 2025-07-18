@@ -1,14 +1,12 @@
 import { describe, expect, test, spyOn } from 'bun:test'
 import { getCitations, extractReferenceCitations } from '../src/find'
 import { cleanText } from '../src/clean'
-import { disambiguateReporters, filterCitations } from '../src/helpers'
-import { DefaultTokenizer } from '../src/tokenizers/default'
+import { filterCitations } from '../src/helpers'
 import { Tokenizer } from '../src/tokenizers/base'
 import type { TokenExtractor } from '../src/tokenizers/base'
 import { createSpecialExtractors, createCitationExtractor } from '../src/tokenizers/extractors'
 import { PAGE_NUMBER_REGEX } from '../src/regexes'
 import { REPORTERS } from '../src/data'
-import type { Document } from '../src/models/base'
 import {
   FullCaseCitation,
   FullLawCitation,

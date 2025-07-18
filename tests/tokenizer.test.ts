@@ -33,10 +33,10 @@ describe('Tokenizer', () => {
   describe('DefaultTokenizer', () => {
     test('should tokenize text with Id citations', () => {
       const text = 'See id. at 123'
-      const [tokens, citationTokens] = defaultTokenizer.tokenize(text)
+      const [_tokens, citationTokens] = defaultTokenizer.tokenize(text)
 
       // Should have: "See", " ", "id.", " ", "at", " ", "123"
-      expect(tokens.length).toBeGreaterThanOrEqual(5)
+      expect(_tokens.length).toBeGreaterThanOrEqual(5)
 
       // Should find the Id token
       const idTokens = citationTokens.filter(([_, token]) => token instanceof IdToken)
@@ -46,7 +46,7 @@ describe('Tokenizer', () => {
 
     test('should tokenize text with Supra citations', () => {
       const text = 'Bush, supra, at 100'
-      const [tokens, citationTokens] = defaultTokenizer.tokenize(text)
+      const [_tokens, citationTokens] = defaultTokenizer.tokenize(text)
 
       const supraTokens = citationTokens.filter(([_, token]) => token instanceof SupraToken)
       expect(supraTokens).toHaveLength(1)
@@ -55,7 +55,7 @@ describe('Tokenizer', () => {
 
     test('should tokenize text with stop words', () => {
       const text = 'Foo v. Bar'
-      const [tokens, citationTokens] = defaultTokenizer.tokenize(text)
+      const [_tokens, citationTokens] = defaultTokenizer.tokenize(text)
 
       const stopTokens = citationTokens.filter(([_, token]) => token instanceof StopWordToken)
       expect(stopTokens).toHaveLength(1)
@@ -64,7 +64,7 @@ describe('Tokenizer', () => {
 
     test('should tokenize text with section symbols', () => {
       const text = 'See § 123'
-      const [tokens, citationTokens] = defaultTokenizer.tokenize(text)
+      const [_tokens, citationTokens] = defaultTokenizer.tokenize(text)
 
       const sectionTokens = citationTokens.filter(([_, token]) => token instanceof SectionToken)
       expect(sectionTokens).toHaveLength(1)
@@ -73,7 +73,7 @@ describe('Tokenizer', () => {
 
     test('should handle overlapping tokens', () => {
       const text = 'id. id.'
-      const [tokens, citationTokens] = defaultTokenizer.tokenize(text)
+      const [_tokens, citationTokens] = defaultTokenizer.tokenize(text)
 
       const idTokens = citationTokens.filter(([_, token]) => token instanceof IdToken)
       expect(idTokens).toHaveLength(2)

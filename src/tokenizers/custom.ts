@@ -234,7 +234,7 @@ export class RegexPatternBuilder {
    * @param separators Allowed separators (e.g., '[.,]')
    */
   static flexibleReporter(reporterParts: string[], separators: string = '[.,\\s]'): string {
-    return reporterParts.join(separators + '+')
+    return reporterParts.join(`${separators}+`)
   }
 
   /**
@@ -274,11 +274,11 @@ export class RegexPatternBuilder {
     let pattern = '\\d+'
     
     if (allowRoman) {
-      pattern = '(?:' + pattern + '|[ivxlcdm]+)'
+      pattern = `(?:${pattern}|[ivxlcdm]+)`
     }
     
     if (allowRanges) {
-      pattern = pattern + '(?:-' + pattern + ')?'
+      pattern = `${pattern}(?:-${pattern})?`
     }
     
     return pattern

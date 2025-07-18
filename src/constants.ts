@@ -1,4 +1,4 @@
-import { CitationBase, FullCaseCitation, CitationToken } from './models'
+import { type CitationBase, FullCaseCitation, CitationToken } from './models'
 
 // Joke cite for easter egg
 export const jokeCite: CitationBase[] = [

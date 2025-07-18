@@ -1,4 +1,4 @@
-import { createHash } from 'crypto'
+import { createHash } from 'node:crypto'
 import { CitationBase, type Document, type Metadata, type Token } from './base'
 import { type Edition, includesYear } from './reporters'
 import { findCaseName, findCaseNameInHtml, addPostCitation } from '../helpers'
@@ -10,7 +10,7 @@ export const REPORTERS_THAT_NEED_PAGE_CORRECTION = new Set([
   'L. Ed. 2d',
 ])
 
-function hashSha256(data: any): string {
+function hashSha256(data: unknown): string {
   const hash = createHash('sha256')
   hash.update(JSON.stringify(data))
   return hash.digest('hex')
@@ -50,7 +50,7 @@ export abstract class ResourceCitation extends CitationBase {
     return hashSha256(data)
   }
 
-  addMetadata(document: Document): void {
+  addMetadata(_document: Document): void {
     this.guessEdition()
   }
 
