@@ -38,7 +38,7 @@ export abstract class CitationBase {
 
     // Set known missing page numbers to null
     if (this.groups.page && /^_+$/.test(this.groups.page)) {
-      this.groups.page = undefined
+      this.groups.page = null
     }
   }
 
