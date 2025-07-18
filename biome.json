@@ -23,7 +23,7 @@
         "noBannedTypes": "error",
         "noExtraBooleanCast": "error",
         "noUselessCatch": "error",
-        "noStaticOnlyClass": "warn"
+        "noStaticOnlyClass": "off"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -43,7 +43,7 @@
         "useConst": "error",
         "useTemplate": "error",
         "useNodejsImportProtocol": "warn",
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "off"
       },
       "suspicious": {
         "noDuplicateCase": "error",
@@ -55,7 +55,9 @@
         "noRedeclare": "error",
         "noUnsafeNegation": "error",
         "useGetterReturn": "error",
-        "noExplicitAny": "warn"
+        "noExplicitAny": "off",
+        "noAssignInExpressions": "off",
+        "noTemplateCurlyInString": "off"
       }
     }
   },

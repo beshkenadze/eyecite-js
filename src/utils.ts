@@ -142,7 +142,7 @@ export function isBalancedHtml(text: string): boolean {
   // Simple tag balance check
   const tagStack: string[] = []
   const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)[^>]*>/g
-  let match
+  let match: RegExpExecArray | null
 
   while ((match = tagRegex.exec(text)) !== null) {
     const [fullMatch, tagName] = match
