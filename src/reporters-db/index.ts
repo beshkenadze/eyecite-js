@@ -3,11 +3,11 @@
  * Using actual data from Free Law Project
  */
 
+import caseNameAbbreviationsData from '../data/case_name_abbreviations.json'
+import courtsData from '../data/courts.json'
 // Import the actual data
 import reportersData from '../data/reporters.json'
-import courtsData from '../data/courts.json'
 import stateAbbreviationsData from '../data/state_abbreviations.json'
-import caseNameAbbreviationsData from '../data/case_name_abbreviations.json'
 
 export interface Edition {
   name?: string
@@ -42,8 +42,12 @@ export interface Court {
 // Export the actual data with proper types
 export const REPORTERS: Record<string, Reporter[]> = reportersData as Record<string, Reporter[]>
 export const COURTS: Court[] = courtsData as Court[]
-export const STATE_ABBREVIATIONS: Record<string, string> = stateAbbreviationsData as Record<string, string>
-export const CASE_NAME_ABBREVIATIONS: Record<string, string[]> = caseNameAbbreviationsData as Record<string, string[]>
+export const STATE_ABBREVIATIONS: Record<string, string> = stateAbbreviationsData as Record<
+  string,
+  string
+>
+export const CASE_NAME_ABBREVIATIONS: Record<string, string[]> =
+  caseNameAbbreviationsData as Record<string, string[]>
 
 // Additional databases (empty for now, can be populated if needed)
 export const LAWS: Record<string, unknown> = {}
@@ -51,9 +55,9 @@ export const JOURNALS: Record<string, unknown> = {}
 
 // Raw regex variables
 export const RAW_REGEX_VARIABLES: Record<string, string> = {
-  "reporter": Object.keys(REPORTERS).join("|"),
-  "page": "\\d+",
-  "volume": "\\d+"
+  reporter: Object.keys(REPORTERS).join('|'),
+  page: '\\d+',
+  volume: '\\d+',
 }
 
 // Build variations mapping

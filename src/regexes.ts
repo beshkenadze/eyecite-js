@@ -16,19 +16,19 @@ export function shortCiteRe(regex: string): string {
   // Convert a full citation regex into a short citation regex
   // We need to replace the pattern before (?<page> with the short citation pattern
   // This handles cases like "1 U. S., at 2"
-  
+
   // Find the position of (?<page>
   const pageIndex = regex.indexOf('(?<page>')
   if (pageIndex === -1) return regex
-  
+
   // Find the last \s+ before (?<page>
   const beforePage = regex.substring(0, pageIndex)
   const afterPage = regex.substring(pageIndex)
-  
+
   // Replace the last \s+ (single backslash) with the short citation pattern
   // Use single backslashes in the replacement since the regex string already has them
   const beforePageModified = beforePage.replace(/\\s\+$/, '(?:,\\s*|\\s+)at\\s+(?:p\\.\\s+)?')
-  
+
   return beforePageModified + afterPage
 }
 
@@ -84,9 +84,7 @@ export const STOP_WORDS = [
   'Cf',
 ]
 
-export const STOP_WORD_REGEX = spaceBoundariesRe(
-  stripPunctuationRe(`(${STOP_WORDS.join('|')})`),
-)
+export const STOP_WORD_REGEX = spaceBoundariesRe(stripPunctuationRe(`(${STOP_WORDS.join('|')})`))
 
 // Section token regex
 export const SECTION_REGEX = '(\\S*§\\S*)'

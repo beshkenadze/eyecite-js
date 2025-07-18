@@ -1,12 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  cleanText,
-  html,
-  inlineWhitespace,
-  allWhitespace,
-  underscores,
-  xml,
-} from '../src/clean'
+import { allWhitespace, cleanText, html, inlineWhitespace, underscores, xml } from '../src/clean'
 
 describe('Text Cleaning Utilities', () => {
   describe('cleanText', () => {

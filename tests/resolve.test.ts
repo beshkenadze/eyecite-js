@@ -27,7 +27,7 @@ describe('Citation Resolution', () => {
       )
 
       const resolutions = resolveCitations([fullCite])
-      
+
       expect(resolutions.size).toBe(1)
       const resources = Array.from(resolutions.keys())
       expect(resources[0]).toBeInstanceOf(Resource)
@@ -60,11 +60,11 @@ describe('Citation Resolution', () => {
       )
 
       const resolutions = resolveCitations([fullCite, shortCite])
-      
+
       expect(resolutions.size).toBe(1)
       const resources = Array.from(resolutions.keys())
       const citations = resolutions.get(resources[0])
-      
+
       expect(citations).toHaveLength(2)
       expect(citations).toContain(fullCite)
       expect(citations).toContain(shortCite)
@@ -82,18 +82,14 @@ describe('Citation Resolution', () => {
         [],
       )
 
-      const idCite = new IdCitation(
-        new IdToken('id.', 10, 13),
-        1,
-        { pinCite: 'at 5' },
-      )
+      const idCite = new IdCitation(new IdToken('id.', 10, 13), 1, { pinCite: 'at 5' })
 
       const resolutions = resolveCitations([fullCite, idCite])
-      
+
       expect(resolutions.size).toBe(1)
       const resources = Array.from(resolutions.keys())
       const citations = resolutions.get(resources[0])
-      
+
       expect(citations).toHaveLength(2)
       expect(citations).toContain(fullCite)
       expect(citations).toContain(idCite)
@@ -112,18 +108,14 @@ describe('Citation Resolution', () => {
       )
 
       // Pin cite is before the start page - should fail
-      const idCite = new IdCitation(
-        new IdToken('id.', 15, 18),
-        1,
-        { pinCite: 'at 50' },
-      )
+      const idCite = new IdCitation(new IdToken('id.', 15, 18), 1, { pinCite: 'at 50' })
 
       const resolutions = resolveCitations([fullCite, idCite])
-      
+
       expect(resolutions.size).toBe(1)
       const resources = Array.from(resolutions.keys())
       const citations = resolutions.get(resources[0])
-      
+
       // Only the full citation should be resolved
       expect(citations).toHaveLength(1)
       expect(citations).toContain(fullCite)
@@ -143,18 +135,16 @@ describe('Citation Resolution', () => {
         { defendant: 'Smith', plaintiff: 'Jones' },
       )
 
-      const supraCite = new SupraCitation(
-        new SupraToken('supra', 15, 20),
-        1,
-        { antecedentGuess: 'Smith' },
-      )
+      const supraCite = new SupraCitation(new SupraToken('supra', 15, 20), 1, {
+        antecedentGuess: 'Smith',
+      })
 
       const resolutions = resolveCitations([fullCite, supraCite])
-      
+
       expect(resolutions.size).toBe(1)
       const resources = Array.from(resolutions.keys())
       const citations = resolutions.get(resources[0])
-      
+
       expect(citations).toHaveLength(2)
       expect(citations).toContain(fullCite)
       expect(citations).toContain(supraCite)
@@ -185,16 +175,12 @@ describe('Citation Resolution', () => {
         { defendant: 'Doe', plaintiff: 'Smith' },
       )
 
-      const idCite = new IdCitation(
-        new IdToken('id.', 35, 38),
-        3,
-        { pinCite: 'at 105' },
-      )
+      const idCite = new IdCitation(new IdToken('id.', 35, 38), 3, { pinCite: 'at 105' })
 
       const resolutions = resolveCitations([fullCite1, fullCite2, idCite])
-      
+
       expect(resolutions.size).toBe(2)
-      
+
       // Check that id citation is grouped with the second full citation
       for (const [resource, citations] of resolutions) {
         if (citations.includes(fullCite2)) {
@@ -211,7 +197,7 @@ describe('Citation Resolution', () => {
       )
 
       const resolutions = resolveCitations([supraCite])
-      
+
       // Should be empty since the citation couldn't be resolved
       expect(resolutions.size).toBe(0)
     })
@@ -220,7 +206,7 @@ describe('Citation Resolution', () => {
   describe('Custom Resolution Functions', () => {
     test('should accept custom resolution functions', () => {
       const customResource = { id: 'custom-123' }
-      
+
       const fullCite = new FullCaseCitation(
         new CitationToken('1 U.S. 1', 0, 7, {
           volume: '1',
@@ -235,7 +221,7 @@ describe('Citation Resolution', () => {
       const resolutions = resolveCitations([fullCite], {
         resolveFullCitation: () => customResource,
       })
-      
+
       expect(resolutions.size).toBe(1)
       expect(resolutions.has(customResource)).toBe(true)
       expect(resolutions.get(customResource)).toEqual([fullCite])

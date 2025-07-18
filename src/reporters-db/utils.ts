@@ -6,18 +6,15 @@
  * Process variables in regex patterns
  * Replace template variables with their values
  */
-export function processVariables(
-  pattern: string,
-  variables: Record<string, string>
-): string {
+export function processVariables(pattern: string, variables: Record<string, string>): string {
   let result = pattern
-  
+
   // Replace variables in the pattern
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\$\\{${key}\\}`, 'g')
     result = result.replace(regex, value)
   }
-  
+
   return result
 }
 
@@ -28,19 +25,19 @@ export function processVariables(
 export function recursiveSubstitute(
   pattern: string,
   variables: Record<string, string>,
-  maxDepth = 10
+  maxDepth = 10,
 ): string {
   let result = pattern
   let depth = 0
   let hasChanges = true
-  
+
   while (hasChanges && depth < maxDepth) {
     const previous = result
     result = processVariables(result, variables)
     hasChanges = result !== previous
     depth++
   }
-  
+
   return result
 }
 
@@ -50,13 +47,11 @@ export function recursiveSubstitute(
 export function buildReporterRegex(
   reporters: string[],
   pageVar = '\\d+',
-  volumeVar = '\\d+'
+  volumeVar = '\\d+',
 ): string {
   // Escape special regex characters in reporter names
-  const escapedReporters = reporters.map(r => 
-    r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  )
-  
+  const escapedReporters = reporters.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+
   // Build pattern with named groups
   return `(?<volume>${volumeVar})\\s+(?<reporter>${escapedReporters.join('|')})\\s+(?<page>${pageVar})`
 }
@@ -66,8 +61,8 @@ export function buildReporterRegex(
  */
 export function normalizeReporter(reporter: string): string {
   return reporter
-    .replace(/\s+/g, ' ')  // Normalize spaces
-    .replace(/\./g, '')    // Remove periods
-    .toLowerCase()         // Convert to lowercase
+    .replace(/\s+/g, ' ') // Normalize spaces
+    .replace(/\./g, '') // Remove periods
+    .toLowerCase() // Convert to lowercase
     .trim()
 }

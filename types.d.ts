@@ -13,6 +13,14 @@ declare module '@beshkenadze/eyecite' {
     volume?: string
     reporter?: string
     page?: string
+    chapter?: string
+    section?: string
+    title?: string
+    journal?: string
+    journalName?: string
+    yearRange?: string
+    endYear?: number
+    warnings?: string[]
     [key: string]: any
   }
 

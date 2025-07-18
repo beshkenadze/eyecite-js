@@ -163,7 +163,7 @@ export abstract class Token {
     // Get the captured group (1) or fall back to full match (0)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the captured group
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -173,7 +173,7 @@ export abstract class Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
     const groups: Groups = {}
 

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
+import { addPostCitation, findCaseName, findCaseNameInHtml } from '../helpers'
 import { CitationBase, type Document, type Metadata, type Token } from './base'
 import { type Edition, includesYear } from './reporters'
-import { findCaseName, findCaseNameInHtml, addPostCitation } from '../helpers'
 
 export const REPORTERS_THAT_NEED_PAGE_CORRECTION = new Set([
   'U.S.',
@@ -107,20 +107,19 @@ export abstract class ResourceCitation extends CitationBase {
 
     // Attempt resolution by date
     if (editions.length > 1 && this.year) {
-      const filteredEditions = editions.filter(e => includesYear(e, this.year!))
+      const filteredEditions = editions.filter((e) => includesYear(e, this.year!))
       if (filteredEditions.length === 1) {
         this.editionGuess = filteredEditions[0]
         return
       }
     }
-    
+
     // If we have exactly one edition, use it
     if (editions.length === 1) {
       this.editionGuess = editions[0]
     }
     // Otherwise, leave editionGuess as null for ambiguous cases
   }
-
 }
 
 export abstract class FullCitation extends ResourceCitation {}
@@ -239,10 +238,10 @@ export class FullCaseCitation extends CaseCitation {
     } else {
       findCaseName(this, document, false)
     }
-    
+
     // Extract post-citation metadata (year, court, parentheticals)
     addPostCitation(this, document.words)
-    
+
     this.guessCourt()
     this.guessEdition()
   }
@@ -282,7 +281,7 @@ export class FullCaseCitation extends CaseCitation {
 
 export class ShortCaseCitation extends CaseCitation {
   short = true
-  
+
   correctedCitationFull(): string {
     const parts = []
     if (this.metadata.antecedentGuess) {

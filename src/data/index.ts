@@ -3,13 +3,13 @@
  * Generated on: 2025-07-11T19:56:13.825Z
  */
 
-import reportersData from './reporters.json'
-import courtsData from './courts.json'
-import stateAbbreviations from './state_abbreviations.json'
 import caseNameAbbreviations from './case_name_abbreviations.json'
+import courtsData from './courts.json'
+import journalsData from './journals.json'
 import lawsData from './laws.json'
 import regexesData from './regexes.json'
-import journalsData from './journals.json'
+import reportersData from './reporters.json'
+import stateAbbreviations from './state_abbreviations.json'
 
 export const REPORTERS = reportersData
 export const COURTS = courtsData
