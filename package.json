@@ -1,0 +1,83 @@
+{
+  "name": "@beshkenadze/eyecite-js",
+  "version": "2.7.6-alpha.3",
+  "description": "TypeScript library for extracting legal citations from text strings. A complete port of the Python eyecite library.",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "bun run clean && bun run build:esm && bun run build:cjs && bun run build:types",
+    "build:esm": "bun build ./src/index.ts --outdir ./dist --target node --format esm --external @types/* --external typescript",
+    "build:cjs": "bun build ./src/index.ts --target node --format cjs --outfile dist/index.cjs --external @types/* --external typescript",
+    "build:types": "tsc -p tsconfig.build.json || true",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "format": "biome format --write",
+    "lint": "biome lint --write",
+    "check": "biome check --write",
+    "typecheck": "tsc --noEmit",
+    "dev": "bun run src/index.ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "bun run build",
+    "version": "bun run build && git add dist/",
+    "postversion": "git push && git push --tags"
+  },
+  "keywords": [
+    "legal",
+    "courts",
+    "citations",
+    "extraction",
+    "cites",
+    "typescript",
+    "eyecite",
+    "case-law",
+    "court-documents",
+    "legal-tech",
+    "nlp",
+    "text-processing"
+  ],
+  "author": "Free Law Project",
+  "license": "BSD-2-Clause",
+  "homepage": "https://github.com/beshkenadze/eyecite-js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beshkenadze/eyecite-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/beshkenadze/eyecite-js/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "css-select": "^6.0.0",
+    "diff-match-patch": "^1.0.5",
+    "domhandler": "^5.0.3",
+    "domutils": "^3.2.2",
+    "htmlparser2": "^10.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.1.1",
+    "@types/bun": "^1.2.18",
+    "@types/diff-match-patch": "^1.0.36",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

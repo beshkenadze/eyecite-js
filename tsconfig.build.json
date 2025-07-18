@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "isolatedModules": false,
+    "noEmit": false,
+    "noEmitOnError": false,
+    "skipLibCheck": true,
+    "checkJs": false,
+    "allowJs": false
+  }
+}

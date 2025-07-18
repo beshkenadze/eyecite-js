@@ -1,0 +1,75 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.1.1/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["src/**/*.ts", "tests/**/*.ts"],
+    "ignoreUnknown": false
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noBannedTypes": "error",
+        "noExtraBooleanCast": "error",
+        "noUselessCatch": "error"
+      },
+      "correctness": {
+        "noConstAssign": "error",
+        "noConstantCondition": "error",
+        "noEmptyCharacterClassInRegex": "error",
+        "noEmptyPattern": "error",
+        "noGlobalObjectCalls": "error",
+        "noInvalidConstructorSuper": "error",
+        "noUndeclaredVariables": "error",
+        "noUnreachable": "error",
+        "noUnreachableSuper": "error"
+      },
+      "style": {
+        "useConst": "error",
+        "useTemplate": "error"
+      },
+      "suspicious": {
+        "noDuplicateCase": "error",
+        "noDuplicateClassMembers": "error",
+        "noDuplicateObjectKeys": "error",
+        "noDuplicateParameters": "error",
+        "noFunctionAssign": "error",
+        "noImportAssign": "error",
+        "noRedeclare": "error",
+        "noUnsafeNegation": "error",
+        "useGetterReturn": "error"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all"
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}
