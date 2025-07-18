@@ -1,4 +1,5 @@
 import type { Node } from 'domhandler'
+import { isTag, isText, hasChildren } from 'domhandler'
 import { parseDocument } from 'htmlparser2'
 
 type CleaningStep = string | ((text: string) => string)
@@ -49,13 +50,13 @@ export function html(htmlContent: string): string {
   const textNodes: string[] = []
 
   function extractText(node: Node): void {
-    if (node.type === 'text') {
+    if (isText(node)) {
       // Check if any parent is a skip tag
       let parent = node.parent
       let shouldSkip = false
 
       while (parent) {
-        if (parent.name && skipTags.has(parent.name.toLowerCase())) {
+        if (isTag(parent) && skipTags.has(parent.name.toLowerCase())) {
           shouldSkip = true
           break
         }
@@ -68,7 +69,7 @@ export function html(htmlContent: string): string {
           textNodes.push(text)
         }
       }
-    } else if (node.children) {
+    } else if (hasChildren(node)) {
       for (const child of node.children) {
         extractText(child)
       }
