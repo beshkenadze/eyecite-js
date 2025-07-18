@@ -20,9 +20,20 @@ export class CitationToken extends Token {
   }
 
   static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): CitationToken {
-    // For citation tokens, always use the full match (match[0])
-    const matchText = match[0]
-    const start = (match.index || 0) + offset
+    // Get the captured group (1) or fall back to full match (0)
+    const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
+    const matchText = match[captureIndex]
+    
+    // Calculate start position based on the captured group
+    let start = (match.index || 0) + offset
+    if (captureIndex > 0 && match[0]) {
+      // Find where the capture starts within the full match
+      const captureOffset = match[0].indexOf(match[captureIndex])
+      if (captureOffset > 0) {
+        start += captureOffset
+      }
+    }
+    
     const end = start + matchText.length
     
     // Extract named groups
