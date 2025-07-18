@@ -1,32 +1,32 @@
-import { describe, expect, test, spyOn } from 'bun:test'
-import { getCitations, extractReferenceCitations } from '../src/find'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { cleanText } from '../src/clean'
-import { filterCitations } from '../src/helpers'
-import { Tokenizer } from '../src/tokenizers/base'
-import type { TokenExtractor } from '../src/tokenizers/base'
-import { createSpecialExtractors, createCitationExtractor } from '../src/tokenizers/extractors'
-import { PAGE_NUMBER_REGEX } from '../src/regexes'
 import { REPORTERS } from '../src/data'
+import { extractReferenceCitations, getCitations } from '../src/find'
+import { filterCitations } from '../src/helpers'
+import type { CitationBase } from '../src/models'
 import {
-  FullCaseCitation,
-  FullLawCitation,
-  FullJournalCitation,
-  ShortCaseCitation,
-  IdCitation,
-  SupraCitation,
-  UnknownCitation,
-  ReferenceCitation,
-  CitationToken,
   CaseReferenceToken,
+  CitationToken,
+  createEdition,
+  createReporter,
+  type Edition,
+  FullCaseCitation,
+  FullJournalCitation,
+  FullLawCitation,
+  IdCitation,
+  includesYear,
+  ReferenceCitation,
+  Reporter,
+  ShortCaseCitation,
+  SupraCitation,
   SupraToken,
   Token,
-  Reporter,
-  type Edition,
-  includesYear,
-  createReporter,
-  createEdition,
+  UnknownCitation,
 } from '../src/models'
-import type { CitationBase } from '../src/models'
+import { PAGE_NUMBER_REGEX } from '../src/regexes'
+import type { TokenExtractor } from '../src/tokenizers/base'
+import { Tokenizer } from '../src/tokenizers/base'
+import { createCitationExtractor, createSpecialExtractors } from '../src/tokenizers/extractors'
 
 describe('Find Citations', () => {
   // Helper function to compare citations
@@ -45,11 +45,11 @@ describe('Find Citations', () => {
     options: {
       cleanSteps?: string[]
       removeAmbiguous?: boolean
-    } = {}
+    } = {},
   ) {
     let plainText = text
     let markupText = ''
-    
+
     // Handle clean steps
     if (options.cleanSteps) {
       if (options.cleanSteps.includes('html')) {
@@ -65,17 +65,17 @@ describe('Find Citations', () => {
       options.removeAmbiguous,
       undefined,
       markupText,
-      options.cleanSteps
+      options.cleanSteps,
     )
 
     expect(citations.length).toBe(expectedCitations.length)
 
     citations.forEach((citation, index) => {
       const expected = expectedCitations[index]
-      
+
       // Check type
       expect(citation).toBeInstanceOf(expected.type)
-      
+
       // Check basic properties
       if (expected.volume !== undefined) {
         expect(citation.groups.volume).toBe(expected.volume)
@@ -91,24 +91,24 @@ describe('Find Citations', () => {
       if (expected.page !== undefined) {
         expect(citation.groups.page).toBe(expected.page)
       }
-      
+
       // Check groups if provided
       if (expected.groups) {
         Object.entries(expected.groups).forEach(([key, value]) => {
           expect(citation.groups[key]).toBe(value)
         })
       }
-      
+
       // Check year for full citations
       if ('year' in citation && expected.year !== undefined) {
         expect(citation.year).toBe(expected.year)
       }
-      
+
       // Check if it's a short citation
       if ('short' in citation && expected.short !== undefined) {
         expect(citation.short).toBe(expected.short)
       }
-      
+
       // Check metadata
       if (expected.metadata) {
         Object.entries(expected.metadata).forEach(([key, value]) => {
@@ -131,25 +131,33 @@ describe('Find Citations', () => {
     })
 
     test('should find citation with line break', () => {
-      assertCitations('1 U.S.\n1', [
-        {
-          type: FullCaseCitation,
-          volume: '1',
-          reporter: 'U.S.',
-          page: '1',
-        },
-      ], { cleanSteps: ['all_whitespace'] })
+      assertCitations(
+        '1 U.S.\n1',
+        [
+          {
+            type: FullCaseCitation,
+            volume: '1',
+            reporter: 'U.S.',
+            page: '1',
+          },
+        ],
+        { cleanSteps: ['all_whitespace'] },
+      )
     })
 
     test('should find citation with line break within reporter', () => {
-      assertCitations('1 U.\nS. 1', [
-        {
-          type: FullCaseCitation,
-          volume: '1',
-          reporter: 'U. S.',
-          page: '1',
-        },
-      ], { cleanSteps: ['all_whitespace'] })
+      assertCitations(
+        '1 U.\nS. 1',
+        [
+          {
+            type: FullCaseCitation,
+            volume: '1',
+            reporter: 'U. S.',
+            page: '1',
+          },
+        ],
+        { cleanSteps: ['all_whitespace'] },
+      )
     })
 
     test('should not capture non-case name before citation', () => {
@@ -320,11 +328,12 @@ describe('Find Citations', () => {
   describe('Parallel Citations', () => {
     test('should extract parallel citations with parenthetical', () => {
       // Changed test case to use F.3d instead of U.S. to make the 4th Cir. court designation logical
-      const text = 'Bob Lissner v. Test 123 F.3d 456, 347-348, 789 F. Supp. 123, 358 (4th Cir. 1982) (overruling foo)'
+      const text =
+        'Bob Lissner v. Test 123 F.3d 456, 347-348, 789 F. Supp. 123, 358 (4th Cir. 1982) (overruling foo)'
       const citations = getCitations(text)
-      
+
       expect(citations.length).toBe(2)
-      
+
       // First citation
       expect(citations[0]).toBeInstanceOf(FullCaseCitation)
       expect(citations[0].groups.volume).toBe('123')
@@ -336,7 +345,7 @@ describe('Find Citations', () => {
       expect(citations[0].metadata.court).toBe('ca4')
       expect(citations[0].metadata.pinCite).toBe('347-348')
       expect(citations[0].metadata.parenthetical).toBe('overruling foo')
-      
+
       // Second citation
       expect(citations[1]).toBeInstanceOf(FullCaseCitation)
       expect(citations[1].groups.volume).toBe('789')
@@ -745,15 +754,19 @@ describe('Find Citations', () => {
     })
 
     test('should find supra across line break', () => {
-      assertCitations('before Foo, supra,\nat 2', [
-        {
-          type: SupraCitation,
-          metadata: {
-            pinCite: 'at 2',
-            antecedentGuess: 'Foo',
+      assertCitations(
+        'before Foo, supra,\nat 2',
+        [
+          {
+            type: SupraCitation,
+            metadata: {
+              pinCite: 'at 2',
+              antecedentGuess: 'Foo',
+            },
           },
-        },
-      ], { cleanSteps: ['all_whitespace'] })
+        ],
+        { cleanSteps: ['all_whitespace'] },
+      )
     })
 
     test('should handle supra with parenthetical', () => {
@@ -845,9 +858,9 @@ describe('Find Citations', () => {
     test('should handle multiple citations with parentheticals', () => {
       const text = '1 U. S., at 2 (criticizing xyz). Foo v. Bar 3 U. S. 4 (2010) (overruling xyz).'
       const citations = getCitations(text)
-      
+
       expect(citations.length).toBe(2)
-      
+
       // First citation - short form
       expect(citations[0]).toBeInstanceOf(ShortCaseCitation)
       expect(citations[0].groups.volume).toBe('1')
@@ -855,7 +868,7 @@ describe('Find Citations', () => {
       expect(citations[0].groups.page).toBe('2')
       expect(citations[0].metadata.pinCite).toBe('2')
       expect(citations[0].metadata.parenthetical).toBe('criticizing xyz')
-      
+
       // Second citation - full
       expect(citations[1]).toBeInstanceOf(FullCaseCitation)
       expect(citations[1].groups.volume).toBe('3')
@@ -872,16 +885,16 @@ describe('Find Citations', () => {
     test('should handle citations with abutting punctuation', () => {
       const text = '2 U.S. 3, 4-5 (3 Atl. 33)'
       const citations = getCitations(text)
-      
+
       expect(citations.length).toBe(2)
-      
+
       // First citation
       expect(citations[0]).toBeInstanceOf(FullCaseCitation)
       expect(citations[0].groups.volume).toBe('2')
       expect(citations[0].groups.reporter).toBe('U.S.')
       expect(citations[0].groups.page).toBe('3')
       expect(citations[0].metadata.pinCite).toBe('4-5')
-      
+
       // Second citation
       expect(citations[1]).toBeInstanceOf(FullCaseCitation)
       expect(citations[1].groups.volume).toBe('3')
@@ -904,23 +917,23 @@ describe('Find Citations', () => {
   describe('Law Citations', () => {
     /**
      * Law citation extraction tests for statutes, regulations, and U.S.C. citations.
-     * 
+     *
      * NOTE: These tests are currently skipped because the TypeScript implementation
      * lacks the LAWS data structure from reporters-db that the Python version uses.
-     * 
+     *
      * The LAWS data structure in Python (from reporters-db) contains:
      * - cite_type: Type of citation (e.g., 'federal', 'state', 'statute')
      * - editions: Different editions/variations of the law reporter
      * - mlz_jurisdiction: Machine-readable jurisdiction codes
      * - name: Full name of the law source
      * - variations: Alternative names and abbreviations
-     * 
+     *
      * To implement law citation support in TypeScript, you would need:
      * 1. A LAWS data structure similar to reporters-db/laws.json
      * 2. Law-specific regex patterns for matching statutory citations
      * 3. Extractor classes for different law citation formats
      * 4. Support for parsing sections, chapters, subsections, etc.
-     * 
+     *
      * Example of what the LAWS data might look like:
      * {
      *   "Mass. Gen. Laws": {
@@ -929,7 +942,7 @@ describe('Find Citations', () => {
      *     "regex": "Mass\\. Gen\\. Laws ch\\. (?<chapter>\\d+), § (?<section>[\\d.-]+)"
      *   },
      *   "U.S.C.": {
-     *     "cite_type": "federal", 
+     *     "cite_type": "federal",
      *     "name": "United States Code",
      *     "regex": "(?<volume>\\d+) U\\.S\\.C\\. §§? (?<section>[\\d.-]+)"
      *   }
@@ -1019,32 +1032,35 @@ describe('Find Citations', () => {
 
     // Multiple CFR sections with parentheticals
     test('should find CFR citation with multiple sections', () => {
-      assertCitations('See 29 C.F.R. §§ 778.113 (the "statutory method"), 778.114 (the FWW method).', [
-        {
-          type: FullLawCitation,
-          reporter: 'C.F.R.',
-          groups: {
+      assertCitations(
+        'See 29 C.F.R. §§ 778.113 (the "statutory method"), 778.114 (the FWW method).',
+        [
+          {
+            type: FullLawCitation,
             reporter: 'C.F.R.',
-            chapter: '29',
-            section: '778.113',
+            groups: {
+              reporter: 'C.F.R.',
+              chapter: '29',
+              section: '778.113',
+            },
+            metadata: {
+              parenthetical: 'the "statutory method"',
+            },
           },
-          metadata: {
-            parenthetical: 'the "statutory method"',
-          },
-        },
-        {
-          type: FullLawCitation,
-          reporter: 'C.F.R.',
-          groups: {
+          {
+            type: FullLawCitation,
             reporter: 'C.F.R.',
-            chapter: '29',
-            section: '778.114',
+            groups: {
+              reporter: 'C.F.R.',
+              chapter: '29',
+              section: '778.114',
+            },
+            metadata: {
+              parenthetical: 'the FWW method',
+            },
           },
-          metadata: {
-            parenthetical: 'the FWW method',
-          },
-        },
-      ])
+        ],
+      )
     })
 
     // Parenthetical with repealed status
@@ -1185,9 +1201,9 @@ describe('Find Citations', () => {
 
     /**
      * Mock implementation for testing:
-     * 
+     *
      * To make these tests pass, you would need to:
-     * 
+     *
      * 1. Create a mock LAWS data structure:
      * ```typescript
      * const MOCK_LAWS = {
@@ -1208,11 +1224,11 @@ describe('Find Citations', () => {
      *   // ... more law sources
      * }
      * ```
-     * 
+     *
      * 2. Create law-specific extractors that use these patterns
-     * 
+     *
      * 3. Update the tokenizer to include law extractors
-     * 
+     *
      * 4. Ensure FullLawCitation class properly handles the groups
      *    property to store chapter, section, subsection data
      */
@@ -1221,23 +1237,23 @@ describe('Find Citations', () => {
   describe('Journal Citations', () => {
     /**
      * Journal citation extraction tests for legal journal/law review articles.
-     * 
+     *
      * NOTE: These tests are currently skipped because the TypeScript implementation
      * lacks the JOURNALS data structure from reporters-db that the Python version uses.
-     * 
+     *
      * The JOURNALS data structure in Python (from reporters-db) contains:
      * - cite_type: Type of citation (e.g., 'journal')
      * - editions: Different editions/variations of the journal
      * - mlz_jurisdiction: Machine-readable jurisdiction codes
      * - name: Full name of the journal
      * - variations: Alternative names and abbreviations
-     * 
+     *
      * To implement journal citation support in TypeScript, you would need:
      * 1. A JOURNALS data structure similar to reporters-db/journals.json
      * 2. Journal-specific regex patterns for matching journal citations
      * 3. Extractor classes for journal citation formats
      * 4. Support for parsing volume, page, pin cites, and years
-     * 
+     *
      * Example of what the JOURNALS data might look like:
      * {
      *   "Harv. L. Rev.": {
@@ -1405,9 +1421,9 @@ describe('Find Citations', () => {
 
     /**
      * Mock implementation for testing:
-     * 
+     *
      * To make these tests pass, you would need to:
-     * 
+     *
      * 1. Create a mock JOURNALS data structure:
      * ```typescript
      * const MOCK_JOURNALS = {
@@ -1446,14 +1462,14 @@ describe('Find Citations', () => {
      *   // ... more journals
      * }
      * ```
-     * 
+     *
      * 2. Create journal-specific extractors that use these patterns
-     * 
+     *
      * 3. Update the tokenizer to include journal extractors
-     * 
+     *
      * 4. Ensure FullJournalCitation class properly handles the metadata
      *    for pin cites, parentheticals, and other journal-specific data
-     * 
+     *
      * 5. Handle journal-specific formatting like:
      *    - Page ranges (e.g., "123-145")
      *    - Footnote references (e.g., "123 n.5")
@@ -1470,7 +1486,7 @@ describe('Find Citations', () => {
      * - Tax Court Memo: 'T.C. Memo. 2019-1' (reporter year-page format, no volume)
      * - Tax Court Summary Opinion: 'T.C. Summary Opinion 2019-1' (reporter year-page format, no volume)
      * - Tax Court No.: '1 T.C. No. 233' (neutral citation format)
-     * 
+     *
      * Note: T.C. Memo. and T.C. Summary Opinion use special regex patterns
      * in reporters.json: "$full_cite_year_page" which means the year acts
      * as the volume and is followed by a hyphen and page number.
@@ -1551,23 +1567,23 @@ describe('Find Citations', () => {
 
     /**
      * Implementation notes for special Tax Court formats:
-     * 
+     *
      * The Python implementation handles special regex patterns defined in
      * reporters-db for these citations. The patterns include:
-     * 
+     *
      * - "$full_cite_year_page": Matches "T.C. Memo. 2019-123" format
      *   where the reporter is followed by a year, hyphen, and page number
-     * 
+     *
      * To fully support these in TypeScript, the tokenizer would need to:
      * 1. Parse the "regexes" field from edition data in reporters.json
      * 2. Replace template variables like "$full_cite_year_page" with
      *    actual regex patterns
      * 3. Create extractors for these special patterns in addition to
      *    the standard volume-reporter-page format
-     * 
+     *
      * The regex pattern for "$full_cite_year_page" would be something like:
      * `(?<reporter>T\.C\. Memo\.)\s+(?<volume>\d{4})-(?<page>\d+)`
-     * 
+     *
      * Current status:
      * - ✅ Standard Tax Court citations work (1 T.C. 1)
      * - ✅ Board of Tax Appeals citations work (1 B.T.A. 1)
@@ -1580,7 +1596,7 @@ describe('Find Citations', () => {
   describe('Citation Filtering', () => {
     /**
      * Citation filtering removes overlapping citations and keeps only the most relevant ones.
-     * 
+     *
      * The filtering logic:
      * 1. Removes duplicate citations with the same span
      * 2. When citations overlap, it prefers:
@@ -1588,11 +1604,11 @@ describe('Find Citations', () => {
      *    - ShortCaseCitation over SupraCitation
      *    - Citations within parentheticals are kept even if overlapping
      *    - Known overlap cases like parallel full citations are allowed
-     * 
+     *
      * The main use case is when a bug causes multiple citation types to match the same text.
      * For example, if "Conley v. Gibson, 355 Mass. 41, 42 (1999)" incorrectly produces:
      * - ReferenceCitation for "Conley"
-     * - ReferenceCitation for "Gibson"  
+     * - ReferenceCitation for "Gibson"
      * - FullCaseCitation for the whole citation
      * The filter should keep only the FullCaseCitation.
      */
@@ -1616,7 +1632,7 @@ describe('Find Citations', () => {
     test('should filter overlapping citations keeping the better one', () => {
       // This test simulates the scenario from the Python test where
       // reference citations overlap with a full citation
-      
+
       // Create mock citations with overlapping spans
       // Note: We need to create these manually since getCitations wouldn't
       // normally produce this overlapping scenario
@@ -1635,14 +1651,14 @@ describe('Find Citations', () => {
               26,
               38,
               { volume: '355', reporter: 'Mass.', page: '41' },
-              [],  // exactEditions
-              [],  // variationEditions
-              false // short
+              [], // exactEditions
+              [], // variationEditions
+              false, // short
             ),
             0,
-            [],  // exactEditions
-            [],  // variationEditions
-            { plaintiff: 'Conley', defendant: 'Gibson' }
+            [], // exactEditions
+            [], // variationEditions
+            { plaintiff: 'Conley', defendant: 'Gibson' },
           )
           citation.fullSpanStart = 8
           citation.fullSpanEnd = 49
@@ -1650,27 +1666,13 @@ describe('Find Citations', () => {
           return citation
         })(),
         // Reference citation for "Conley"
-        new ReferenceCitation(
-          new CaseReferenceToken(
-            'Conley',
-            8,
-            14,
-            {}
-          ),
-          0,
-          { antecedentGuess: 'Conley' }
-        ),
+        new ReferenceCitation(new CaseReferenceToken('Conley', 8, 14, {}), 0, {
+          antecedentGuess: 'Conley',
+        }),
         // Reference citation for "Gibson"
-        new ReferenceCitation(
-          new CaseReferenceToken(
-            'Gibson',
-            18,
-            24,
-            {}
-          ),
-          0,
-          { antecedentGuess: 'Gibson' }
-        ),
+        new ReferenceCitation(new CaseReferenceToken('Gibson', 18, 24, {}), 0, {
+          antecedentGuess: 'Gibson',
+        }),
       ]
 
       // Verify we have 3 citations before filtering
@@ -1699,13 +1701,13 @@ describe('Find Citations', () => {
           4,
           16,
           { volume: '123', reporter: 'U.S.', page: '456' },
-          [],  // exactEditions
-          [],  // variationEditions
-          false // short
+          [], // exactEditions
+          [], // variationEditions
+          false, // short
         ),
         0,
-        [],  // exactEditions
-        []   // variationEditions
+        [], // exactEditions
+        [], // variationEditions
       )
       citation1.document = mockDocument
 
@@ -1715,13 +1717,13 @@ describe('Find Citations', () => {
           4,
           16,
           { volume: '123', reporter: 'U.S.', page: '456' },
-          [],  // exactEditions
-          [],  // variationEditions
-          false // short
+          [], // exactEditions
+          [], // variationEditions
+          false, // short
         ),
         0,
-        [],  // exactEditions
-        []   // variationEditions
+        [], // exactEditions
+        [], // variationEditions
       )
       citation2.document = mockDocument
 
@@ -1745,14 +1747,14 @@ describe('Find Citations', () => {
             11,
             19,
             { volume: '123', reporter: 'U.S.', page: '5' },
-            [],  // exactEditions
-            [],  // variationEditions
-            true // short
+            [], // exactEditions
+            [], // variationEditions
+            true, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          { antecedentGuess: 'Smith', pinCite: '5' }
+          [], // exactEditions
+          [], // variationEditions
+          { antecedentGuess: 'Smith', pinCite: '5' },
         )
         citation.fullSpanStart = 4
         citation.fullSpanEnd = 24
@@ -1761,16 +1763,9 @@ describe('Find Citations', () => {
       })()
 
       const supraCitation = (() => {
-        const citation = new SupraCitation(
-          new SupraToken(
-            'supra',
-            26,
-            31,
-            {}
-          ),
-          0,
-          { antecedentGuess: 'Smith' }
-        )
+        const citation = new SupraCitation(new SupraToken('supra', 26, 31, {}), 0, {
+          antecedentGuess: 'Smith',
+        })
         citation.fullSpanStart = 4
         citation.fullSpanEnd = 31
         citation.document = mockDocument
@@ -1798,14 +1793,14 @@ describe('Find Citations', () => {
             11,
             23,
             { volume: '123', reporter: 'U.S.', page: '456' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          { parenthetical: 'discussing Sub case, 789 F.2d 123' }
+          [], // exactEditions
+          [], // variationEditions
+          { parenthetical: 'discussing Sub case, 789 F.2d 123' },
         )
         citation.fullSpanStart = 0
         citation.fullSpanEnd = 60
@@ -1820,14 +1815,14 @@ describe('Find Citations', () => {
             46,
             58,
             { volume: '789', reporter: 'F.2d', page: '123' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          {}
+          [], // exactEditions
+          [], // variationEditions
+          {},
         )
         citation.fullSpanStart = 36
         citation.fullSpanEnd = 58
@@ -1857,14 +1852,14 @@ describe('Find Citations', () => {
             14,
             26,
             { volume: '123', reporter: 'U.S.', page: '456' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          { plaintiff: 'Case', defendant: 'Test' }
+          [], // exactEditions
+          [], // variationEditions
+          { plaintiff: 'Case', defendant: 'Test' },
         )
         citation.fullSpanStart = 0
         citation.fullSpanEnd = 48
@@ -1879,14 +1874,14 @@ describe('Find Citations', () => {
             28,
             40,
             { volume: '789', reporter: 'F.2d', page: '123' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          {}
+          [], // exactEditions
+          [], // variationEditions
+          {},
         )
         citation.fullSpanStart = 28
         citation.fullSpanEnd = 48
@@ -1914,14 +1909,14 @@ describe('Find Citations', () => {
             20,
             32,
             { volume: '123', reporter: 'F.3d', page: '456' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          { plaintiff: 'Smith', defendant: 'Jones' }
+          [], // exactEditions
+          [], // variationEditions
+          { plaintiff: 'Smith', defendant: 'Jones' },
         )
         citation.fullSpanStart = 4
         citation.fullSpanEnd = 47
@@ -1936,14 +1931,14 @@ describe('Find Citations', () => {
             56,
             64,
             { volume: '123', reporter: 'F.3d', page: '458' },
-            [],  // exactEditions
-            [],  // variationEditions
-            true // short
+            [], // exactEditions
+            [], // variationEditions
+            true, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          { antecedentGuess: 'Smith', pinCite: '458' }
+          [], // exactEditions
+          [], // variationEditions
+          { antecedentGuess: 'Smith', pinCite: '458' },
         )
         citation.fullSpanStart = 49
         citation.fullSpanEnd = 73
@@ -1969,12 +1964,8 @@ describe('Find Citations', () => {
       // Create overlapping citations with different priorities
       const referenceCitation = (() => {
         const token = new Token('Smith', 0, 5)
-        
-        const citation = new ReferenceCitation(
-          token,
-          0,
-          { antecedentGuess: 'Smith' }
-        )
+
+        const citation = new ReferenceCitation(token, 0, { antecedentGuess: 'Smith' })
         citation.fullSpanStart = 0
         citation.fullSpanEnd = 5
         citation.document = mockDocument
@@ -1988,14 +1979,14 @@ describe('Find Citations', () => {
             0,
             12,
             { volume: '123', reporter: 'F.3d', page: '456' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          { plaintiff: 'Smith', defendant: 'Jones' }
+          [], // exactEditions
+          [], // variationEditions
+          { plaintiff: 'Smith', defendant: 'Jones' },
         )
         citation.fullSpanStart = 0
         citation.fullSpanEnd = 12
@@ -2024,27 +2015,27 @@ describe('Find Citations', () => {
             0,
             12,
             { volume: '123', reporter: 'F.3d', page: '456' },
-            [],  // exactEditions
-            [],  // variationEditions
-            false // short
+            [], // exactEditions
+            [], // variationEditions
+            false, // short
           ),
           0,
-          [],  // exactEditions
-          [],  // variationEditions
-          {}
+          [], // exactEditions
+          [], // variationEditions
+          {},
         )
         citation.document = mockDocument
         return citation
       })()
 
       const citations = [citation]
-      
+
       // First call should populate cache
       const filtered1 = filterCitations(citations)
-      
+
       // Second call should use cache
       const filtered2 = filterCitations(citations)
-      
+
       expect(filtered1).toHaveLength(1)
       expect(filtered2).toHaveLength(1)
       expect(filtered1[0]).toBe(filtered2[0])
@@ -2052,7 +2043,7 @@ describe('Find Citations', () => {
 
     /**
      * Reporter disambiguation tests
-     * 
+     *
      * These tests validate the disambiguation logic for ambiguous reporter abbreviations.
      * The TypeScript implementation uses the `disambiguateReporters` function which:
      * 1. Filters out ResourceCitations that don't have an editionGuess
@@ -2061,15 +2052,15 @@ describe('Find Citations', () => {
      *    - If a year is present, filters editions to those active in that year
      *    - If EXACTLY ONE edition remains after filtering, sets it as editionGuess
      *    - If zero or multiple editions remain, no editionGuess is set (citation removed)
-     * 
+     *
      * Key differences from Python implementation:
      * - Python has more sophisticated disambiguation logic
      * - TypeScript only disambiguates when there's exactly one matching edition
      * - Citations with multiple possible editions are removed entirely
-     * 
+     *
      * Test cases from Python:
      * - P.R.R. - Has only one edition, should be kept
-     * - U. S. - A variant of U.S., should be kept  
+     * - U. S. - A variant of U.S., should be kept
      * - A.2d - Has only one edition, should be kept
      * - P.R. - Variation of multiple reporters (P., P.R.R., Pen. & W.), ambiguous
      * - W.2d - Variation of both Wis. 2d and Wash. 2d, ambiguous
@@ -2078,25 +2069,33 @@ describe('Find Citations', () => {
      */
     describe('Reporter Disambiguation', () => {
       test('should keep unambiguous reporter (P.R.R.)', () => {
-        assertCitations('1 P.R.R. 1', [
-          {
-            type: FullCaseCitation,
-            volume: '1',
-            reporter: 'P.R.R.',
-            page: '1',
-          },
-        ], { removeAmbiguous: true })
+        assertCitations(
+          '1 P.R.R. 1',
+          [
+            {
+              type: FullCaseCitation,
+              volume: '1',
+              reporter: 'P.R.R.',
+              page: '1',
+            },
+          ],
+          { removeAmbiguous: true },
+        )
       })
 
       test('should resolve simple variant (U. S. -> U.S.)', () => {
-        assertCitations('1 U. S. 1', [
-          {
-            type: FullCaseCitation,
-            volume: '1', 
-            reporter: 'U. S.',
-            page: '1',
-          },
-        ], { removeAmbiguous: true })
+        assertCitations(
+          '1 U. S. 1',
+          [
+            {
+              type: FullCaseCitation,
+              volume: '1',
+              reporter: 'U. S.',
+              page: '1',
+            },
+          ],
+          { removeAmbiguous: true },
+        )
       })
 
       test('should remove A.2d due to multiple editions', () => {
@@ -2132,14 +2131,18 @@ describe('Find Citations', () => {
         // Cra. is a variant of Cranch SCOTUS edition only
         // It has only 1 variation edition, so it's kept
         // However, the court metadata might not be set correctly
-        assertCitations('1 Cra. 1', [
-          {
-            type: FullCaseCitation,
-            volume: '1',
-            reporter: 'Cra.',
-            page: '1',
-          },
-        ], { removeAmbiguous: true })
+        assertCitations(
+          '1 Cra. 1',
+          [
+            {
+              type: FullCaseCitation,
+              volume: '1',
+              reporter: 'Cra.',
+              page: '1',
+            },
+          ],
+          { removeAmbiguous: true },
+        )
       })
 
       test('should remove ambiguous Cranch citation when paired with U.S.', () => {
@@ -2181,7 +2184,7 @@ describe('Find Citations', () => {
 
       /**
        * Summary of TypeScript disambiguation behavior vs Python:
-       * 
+       *
        * The TypeScript implementation is much stricter than Python:
        * - It only keeps citations where exactly ONE edition matches after filtering
        * - Many citations that Python disambiguates are removed in TypeScript
@@ -2190,7 +2193,7 @@ describe('Find Citations', () => {
        *   2. isScotus flag not properly set for scotus_early citations
        *   3. Variation lookups may not work correctly (editionStr vs shortName)
        *   4. No sophisticated disambiguation based on context
-       * 
+       *
        * To match Python behavior, the TypeScript implementation would need:
        * - Better deduplication of reporter editions
        * - More sophisticated year-based filtering
@@ -2242,7 +2245,7 @@ describe('Find Citations', () => {
        * - Finding references in HTML with tags
        * - Using markup-based case name extraction
        * - Handling HTML structure while finding references
-       * 
+       *
        * Note: This test is currently skipped because markup-based reference citation
        * extraction is not fully implemented in TypeScript yet. The getCitations function
        * supports markupText parameter and there's a TODO in extractReferenceCitations
@@ -2267,11 +2270,11 @@ describe('Find Citations', () => {
         punitive goals as well." 44 <i>F.</i>3d at 493.</p>`
 
       const citations = getCitations('', false, undefined, markupText, ['html', 'all_whitespace'])
-      const references = citations.filter(c => c instanceof ReferenceCitation)
-      
+      const references = citations.filter((c) => c instanceof ReferenceCitation)
+
       // Tests both for the order and exact counts. Note that there is one
       // "Bae" in the text that should not be picked up: "Bae's argument"...
-      const matchedTexts = references.map(ref => ref.matchedText().replace(/[,.]$/, ''))
+      const matchedTexts = references.map((ref) => ref.matchedText().replace(/[,.]$/, ''))
       expect(matchedTexts).toEqual(['Bae', 'Halper', 'Bae', 'Bae', 'Halper'])
     })
 
@@ -2280,7 +2283,7 @@ describe('Find Citations', () => {
        * Can we filter out ReferenceCitation that overlap other citations?
        * This test validates that reference citations are properly filtered when they
        * overlap with other citation types like supra citations or full case citations.
-       * 
+       *
        * The overlap detection logic (in helpers.ts/filterCitations) ensures that:
        * 1. Citations are sorted by fullSpan().start position
        * 2. Two citations overlap if: max(start1, start2) < min(end1, end2)
@@ -2288,10 +2291,10 @@ describe('Find Citations', () => {
        *    - ReferenceCitation is always removed in favor of other citation types
        *    - This prevents duplicate citations from being returned
        *    - Ensures proper citation hierarchy (supra/full citations take precedence)
-       * 
+       *
        * Test cases validate filtering against:
        * - SupraCitation objects (e.g., "Twombly, supra")
-       * - Full case citations (e.g., "Johnson, 515 U. S. 304")  
+       * - Full case citations (e.g., "Johnson, 515 U. S. 304")
        * - Short case citations with pin cites (e.g., "Nobelman at 332")
        */
       const texts = [
@@ -2324,7 +2327,7 @@ describe('Find Citations', () => {
 
       for (const markupText of texts) {
         const citations = getCitations('', false, undefined, markupText, ['html', 'all_whitespace'])
-        const hasReferenceCitations = citations.some(cite => cite instanceof ReferenceCitation)
+        const hasReferenceCitations = citations.some((cite) => cite instanceof ReferenceCitation)
         expect(hasReferenceCitations).toBe(false)
       }
     })
@@ -2349,14 +2352,14 @@ describe('Find Citations', () => {
       for (const plainText of texts) {
         const citations = getCitations(plainText)
         const foundCite = citations[0] as FullCaseCitation
-        
+
         // Set resolved case name in metadata
-        foundCite.metadata.resolvedCaseName = "State v. Wingler"
-        
+        foundCite.metadata.resolvedCaseName = 'State v. Wingler'
+
         // Extract reference citations using the resolved case name
         const references = extractReferenceCitations(foundCite, foundCite.document!)
         const finalCitations = filterCitations([...citations, ...references])
-        
+
         expect(finalCitations).toHaveLength(2)
         expect(references).toHaveLength(1)
       }
@@ -2400,44 +2403,47 @@ describe('Find Citations', () => {
         end: 56,
       })
     })
-    
+
     /**
      * Complex test cases ported from Python test_citation_fullspan
      */
-    
+
     // Test multiple citations in one string
     test('should correctly calculate full span for multiple citations in one string', () => {
-      const text = "citation number one is Wilson v. Mar. Overseas Corp., 150 F.3d 1, 6-7 ( 1st Cir. 1998); This is different from Commonwealth v. Bauer, 604 A.2d 1098 (Pa.Super. 1992), my second example"
+      const text =
+        'citation number one is Wilson v. Mar. Overseas Corp., 150 F.3d 1, 6-7 ( 1st Cir. 1998); This is different from Commonwealth v. Bauer, 604 A.2d 1098 (Pa.Super. 1992), my second example'
       const citations = getCitations(text)
-      
+
       expect(citations).toHaveLength(2)
-      
+
       // First citation spans from beginning of text through first citation
       // TypeScript implementation includes text before citation that might be case name
       expect(citations[0].fullSpan()).toEqual({
-        start: 0,  // includes "citation number one is" before "Wilson"
-        end: 86,   // ends after "1998)"
+        start: 0, // includes "citation number one is" before "Wilson"
+        end: 86, // ends after "1998)"
       })
-      
+
       // Second citation: "Commonwealth v. Bauer, 604 A.2d 1098 (Pa.Super. 1992)"
       expect(citations[1].fullSpan()).toEqual({
         start: 88, // starts at "This is different from" before "Commonwealth"
-        end: 164,  // ends after "1992)"
+        end: 164, // ends after "1992)"
       })
-      
+
       // Verify extracted text
-      expect(text.substring(citations[0].fullSpan().start, citations[0].fullSpan().end))
-        .toBe("citation number one is Wilson v. Mar. Overseas Corp., 150 F.3d 1, 6-7 ( 1st Cir. 1998)")
-      expect(text.substring(citations[1].fullSpan().start, citations[1].fullSpan().end))
-        .toBe("This is different from Commonwealth v. Bauer, 604 A.2d 1098 (Pa.Super. 1992)")
+      expect(text.substring(citations[0].fullSpan().start, citations[0].fullSpan().end)).toBe(
+        'citation number one is Wilson v. Mar. Overseas Corp., 150 F.3d 1, 6-7 ( 1st Cir. 1998)',
+      )
+      expect(text.substring(citations[1].fullSpan().start, citations[1].fullSpan().end)).toBe(
+        'This is different from Commonwealth v. Bauer, 604 A.2d 1098 (Pa.Super. 1992)',
+      )
     })
-    
+
     // Test citations that span the entire string (simple examples)
     test('should return full string span for citations covering entire text', () => {
       // Test case citations with expected behavior based on TypeScript implementation
       const testCases = [
         {
-          text: "497 Fed. Appx. 274 (4th Cir. 2012)",
+          text: '497 Fed. Appx. 274 (4th Cir. 2012)',
           expectedStart: 0,
           expectedEnd: 34, // String length is 34
         },
@@ -2447,65 +2453,71 @@ describe('Find Citations', () => {
           expectedEnd: 107, // String length is 107
         },
         {
-          text: "Alderson v. Concordia Par. Corr. Facility, 848 F.3d 415 (5th Cir. 2017)",
+          text: 'Alderson v. Concordia Par. Corr. Facility, 848 F.3d 415 (5th Cir. 2017)',
           expectedStart: 0,
           expectedEnd: 71, // String length is 71
         },
       ]
-      
+
       for (const testCase of testCases) {
         const citations = getCitations(testCase.text)
         expect(citations).toHaveLength(1)
-        
+
         const fullSpan = citations[0].fullSpan()
-        expect(fullSpan).toEqual({
-          start: testCase.expectedStart,
-          end: testCase.expectedEnd,
-        }, `Full span incorrect for: ${testCase.text}`)
-        
+        expect(fullSpan).toEqual(
+          {
+            start: testCase.expectedStart,
+            end: testCase.expectedEnd,
+          },
+          `Full span incorrect for: ${testCase.text}`,
+        )
+
         // Verify the extracted text represents the citation properly
         const extractedText = testCase.text.substring(fullSpan.start, fullSpan.end)
         expect(extractedText.trim()).toMatch(/^(497 Fed|v\. Nature's Farm|Alderson v\.)/)
       }
-      
+
       // Note: The TypeScript implementation may not always include the entire case name
       // in fullSpan if parts of it aren't recognized as citation components.
       // This is acceptable behavior as long as the core citation is captured.
     })
-    
+
     // Test stop word handling in full span calculation
     test('should exclude leading stop words from full span', () => {
       const stopwordExamples = [
-        { text: "See 497 Fed. Appx. 274 (4th Cir. 2012)", expectedStart: 4 },
-        { text: "Citing Alderson v. Facility, 848 F.3d 415 (5th Cir. 2017)", expectedStart: 6 }, // Adjusted based on actual behavior
+        { text: 'See 497 Fed. Appx. 274 (4th Cir. 2012)', expectedStart: 4 },
+        { text: 'Citing Alderson v. Facility, 848 F.3d 415 (5th Cir. 2017)', expectedStart: 6 }, // Adjusted based on actual behavior
       ]
-      
+
       for (const example of stopwordExamples) {
         const citations = getCitations(example.text)
-        
+
         // Skip if unsupported citation type
         if (citations.length === 0) {
           console.log(`Skipping unsupported citation in stopword test: ${example.text}`)
           continue
         }
-        
+
         expect(citations).toHaveLength(1)
-        
+
         const fullSpan = citations[0].fullSpan()
-        expect(fullSpan).toEqual({
-          start: example.expectedStart,
-          end: example.text.length,
-        }, `Stop word should be excluded from full span for: ${example.text}`)
-        
+        expect(fullSpan).toEqual(
+          {
+            start: example.expectedStart,
+            end: example.text.length,
+          },
+          `Stop word should be excluded from full span for: ${example.text}`,
+        )
+
         // Verify the extracted text starts with the citation (excluding stopwords)
         const extractedText = example.text.substring(fullSpan.start, fullSpan.end)
         expect(extractedText.trim()).toMatch(/^(497 Fed\. Appx\.|Alderson v\.)/)
       }
     })
-    
+
     /**
      * Additional test documenting fullspan calculation logic:
-     * 
+     *
      * The fullSpan() method returns the complete span of a citation including:
      * - Case names (plaintiff/defendant) that appear before the reporter
      * - The core citation (volume, reporter, page)
@@ -2513,35 +2525,38 @@ describe('Find Citations', () => {
      * - Court information in parentheses
      * - Pin cites (specific page references after the main page)
      * - Parenthetical explanations (e.g., "discussing jurisdiction")
-     * 
+     *
      * It excludes:
      * - Leading stop words (e.g., "See", "Citing", etc.)
      * - Text before the citation that is not part of the case name
      * - Text after the citation's closing parenthetical
-     * 
+     *
      * The span is calculated by:
      * 1. Starting from the first character of the case name (or the volume if no case name)
      * 2. Extending through all metadata including parentheticals
      * 3. Adjusting for stop words that appear before the citation
      */
     test('should handle complex citation with all components', () => {
-      const text = "See Smith v. Jones, 123 F.3d 456, 458-59 (2d Cir. 2020) (discussing procedural issues), for more details."
+      const text =
+        'See Smith v. Jones, 123 F.3d 456, 458-59 (2d Cir. 2020) (discussing procedural issues), for more details.'
       const citations = getCitations(text)
-      
+
       expect(citations).toHaveLength(1)
       const fullSpan = citations[0].fullSpan()
-      
+
       // Based on actual implementation behavior
       expect(fullSpan.start).toBe(3) // includes space before "Smith"
       expect(fullSpan.end).toBe(86) // End after "(discussing procedural issues)"
-      
+
       // Verify the extracted text includes the full citation with metadata
       const extractedText = text.substring(fullSpan.start, fullSpan.end)
-      expect(extractedText).toBe(" Smith v. Jones, 123 F.3d 456, 458-59 (2d Cir. 2020) (discussing procedural issues)")
-      
+      expect(extractedText).toBe(
+        ' Smith v. Jones, 123 F.3d 456, 458-59 (2d Cir. 2020) (discussing procedural issues)',
+      )
+
       // Verify that the extracted text starts with the case name (after trimming)
       expect(extractedText.trim()).toMatch(/^Smith v\. Jones/)
-      
+
       // Verify citation metadata is properly extracted
       const citation = citations[0] as FullCaseCitation
       expect(citation.metadata.plaintiff).toBe('Smith')
@@ -2553,14 +2568,14 @@ describe('Find Citations', () => {
 
   describe('Nominative Reporter Overlaps', () => {
     /**
-     * Tests for parsing full citations where a party name in the case looks like 
+     * Tests for parsing full citations where a party name in the case looks like
      * a nominative reporter abbreviation.
-     * 
+     *
      * The parser must correctly distinguish between:
      * - Party names that look like reporters (e.g., "A." as a party name)
      * - Actual reporter abbreviations (e.g., "A." as Atlantic Reporter)
      * - Handling of cases like "A. v. B., 1 U.S. 1"
-     * 
+     *
      * Key challenges:
      * - "In re" cases where party names might be abbreviated
      * - State names like "Connecticut" that might be abbreviated
@@ -2657,7 +2672,7 @@ describe('Find Citations', () => {
         {
           type: ShortCaseCitation,
           volume: '500',
-          reporter: 'U.S.',  // Note: normalized to U.S. without spaces
+          reporter: 'U.S.', // Note: normalized to U.S. without spaces
           page: '25',
           short: true,
           metadata: {
@@ -2668,10 +2683,10 @@ describe('Find Citations', () => {
       ])
     })
 
-    test('should parse Bison Bee with F. reporter (not F. App\'x)', () => {
-      // This tests that "778 F. 13 App'x at 73" is parsed as "778 F. 13" 
+    test("should parse Bison Bee with F. reporter (not F. App'x)", () => {
+      // This tests that "778 F. 13 App'x at 73" is parsed as "778 F. 13"
       // because "F. App'x" is not a valid reporter format
-      assertCitations('Bison Bee, 778 F. 13 App\'x at 73.', [
+      assertCitations("Bison Bee, 778 F. 13 App'x at 73.", [
         {
           type: FullCaseCitation,
           volume: '778',
@@ -2740,14 +2755,14 @@ describe('Find Citations', () => {
     // Helper function to build editions lookup similar to Python's EDITIONS_LOOKUP
     function buildEditionsLookup() {
       const lookup: Record<string, Edition[]> = {}
-      
+
       for (const [reporterKey, reporterList] of Object.entries(REPORTERS)) {
         for (const reporterData of reporterList) {
           for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
             if (!lookup[editionName]) {
               lookup[editionName] = []
             }
-            
+
             const reporter = new Reporter(
               reporterData.cite_type,
               reporterData.name,
@@ -2755,10 +2770,11 @@ describe('Find Citations', () => {
               editionName,
               editionData.start || undefined,
               editionData.end || undefined,
-              reporterData.cite_type === 'federal' && reporterData.name.includes('United States Reports'),
+              reporterData.cite_type === 'federal' &&
+                reporterData.name.includes('United States Reports'),
               reporterData.mlz_jurisdiction || [],
             )
-            
+
             lookup[editionName].push({
               reporter,
               reporterFound: editionName,
@@ -2768,45 +2784,45 @@ describe('Find Citations', () => {
           }
         }
       }
-      
+
       return lookup
     }
 
     test('should validate year-based edition matching', () => {
       /**
-       * This test validates that citations with years are properly matched against 
+       * This test validates that citations with years are properly matched against
        * reporter editions that have date ranges. It tests:
        * - Matching citations to the correct edition based on year
        * - Handling reporters with multiple editions for different year ranges
        * - Year validation within edition date ranges
-       * 
-       * The test uses specific reporters like S.E. (South Eastern) which has different 
+       *
+       * The test uses specific reporters like S.E. (South Eastern) which has different
        * editions for different time periods:
        * - S.E.: 1887-1939
        * - S.E.2d: 1939-present
        */
       const editionsLookup = buildEditionsLookup()
-      
+
       const testPairs: Array<[Edition[], number, boolean]> = [
         // S.E. edition tests
         [editionsLookup['S.E.'], 1886, false], // Before S.E. start date (1887)
-        [editionsLookup['S.E.'], 1887, true],  // S.E. start year
+        [editionsLookup['S.E.'], 1887, true], // S.E. start year
         [editionsLookup['S.E.'], 1940, false], // After S.E. end date (1939)
-        
+
         // S.E.2d edition tests
-        [editionsLookup['S.E.2d'], 1940, true],  // S.E.2d start year (1939)
-        [editionsLookup['S.E.2d'], 2012, true],  // Within S.E.2d range
-        
+        [editionsLookup['S.E.2d'], 1940, true], // S.E.2d start year (1939)
+        [editionsLookup['S.E.2d'], 2012, true], // Within S.E.2d range
+
         // T.C.M. (Tax Court Memorandum) edition tests
-        [editionsLookup['T.C.M.'], 1950, true],  // Within T.C.M. range (started 1942)
+        [editionsLookup['T.C.M.'], 1950, true], // Within T.C.M. range (started 1942)
         [editionsLookup['T.C.M.'], 1940, false], // Before T.C.M. start date (1942)
         [editionsLookup['T.C.M.'], new Date().getFullYear() + 1, false], // Future year
       ]
-      
+
       for (const [editions, year, expected] of testPairs) {
         const edition = editions[0] // Get first edition (should only be one per reporter name)
         const dateInReporter = includesYear(edition, year)
-        
+
         expect(dateInReporter).toBe(expected)
       }
     })
@@ -2851,7 +2867,7 @@ describe('Find Citations', () => {
       const fullCite1930 = citations1930[0] as FullCaseCitation
       expect(fullCite1930.groups.reporter).toBe('A.')
       expect(fullCite1930.year).toBe(1930)
-      
+
       // Test with a citation that should be A.2d based on year
       const citations1950 = getCitations('123 A.2d 456 (1950)') // Should be A.2d (starts 1938)
       expect(citations1950).toHaveLength(1)
@@ -2867,72 +2883,72 @@ describe('Find Citations', () => {
        * should handle these cases appropriately.
        */
       const editionsLookup = buildEditionsLookup()
-      
+
       // Find an edition without date restrictions for testing
       const usEditions = editionsLookup['U.S.']
       expect(usEditions).toBeDefined()
-      
+
       // U.S. Reports started in 1875, so test years after that
       const edition = usEditions[0]
       expect(includesYear(edition, 1800)).toBe(false) // Before start date
-      expect(includesYear(edition, 1900)).toBe(true)  // After start date
-      expect(includesYear(edition, 2023)).toBe(true)  // Recent year
+      expect(includesYear(edition, 1900)).toBe(true) // After start date
+      expect(includesYear(edition, 2023)).toBe(true) // Recent year
     })
   })
 
   describe('Enhanced Date Validation', () => {
     test('should validate year ranges correctly', () => {
       const { parseYearRange } = require('../src/models/reporters')
-      
+
       // Valid year ranges
       expect(parseYearRange('1982-83')).toEqual({
         startYear: 1982,
         endYear: 1983,
-        isValid: true
+        isValid: true,
       })
-      
+
       expect(parseYearRange('2005-06')).toEqual({
         startYear: 2005,
         endYear: 2006,
-        isValid: true
+        isValid: true,
       })
-      
+
       expect(parseYearRange('1990-1991')).toEqual({
         startYear: 1990,
         endYear: 1991,
-        isValid: true
+        isValid: true,
       })
-      
+
       expect(parseYearRange('1999-00')).toEqual({
         startYear: 1999,
         endYear: 2000,
-        isValid: true
+        isValid: true,
       })
-      
+
       // Single year
       expect(parseYearRange('2023')).toEqual({
         startYear: 2023,
         endYear: 2023,
-        isValid: true
+        isValid: true,
       })
-      
+
       // Invalid ranges
       expect(parseYearRange('invalid')).toEqual({
         startYear: null,
         endYear: null,
-        isValid: false
+        isValid: false,
       })
-      
+
       expect(parseYearRange('1982-75')).toEqual({
         startYear: null,
         endYear: null,
-        isValid: false
+        isValid: false,
       })
     })
 
     test('should validate date components in court strings', () => {
       const { validateDateComponents } = require('../src/models/reporters')
-      
+
       // Valid dates
       const validDate = validateDateComponents('S.D.N.Y. Jan. 15, 2023')
       expect(validDate.isValid).toBe(true)
@@ -2940,16 +2956,16 @@ describe('Find Citations', () => {
       expect(validDate.day).toBe(15)
       expect(validDate.year).toBe(2023)
       expect(validDate.warnings).toHaveLength(0)
-      
+
       // Invalid month
       const invalidMonth = validateDateComponents('Court, Feb. 30, 2023')
       expect(invalidMonth.isValid).toBe(false)
       expect(invalidMonth.warnings).toContain('Invalid day 30 for 2023-02')
-      
+
       // Future year warning
       const futureYear = validateDateComponents('Court, Jan. 1, 2030')
       expect(futureYear.warnings).toContain('Future year detected: 2030')
-      
+
       // Very old year warning
       const oldYear = validateDateComponents('Court, Jan. 1, 1500')
       expect(oldYear.warnings).toContain('Very old year detected: 1500')
@@ -2957,39 +2973,39 @@ describe('Find Citations', () => {
 
     test('should validate citations against reporter editions', () => {
       const { validateCitationDates } = require('../src/find')
-      
+
       // Create a mock citation
       const citation = new FullCaseCitation(
         new Token('123 F.3d 456', 0, 11, {
           volume: '123',
           reporter: 'F.3d',
-          page: '456'
+          page: '456',
         }),
-        0
+        0,
       )
       citation.year = 1995
-      
+
       // Create mock editions
       const validEdition = createEdition(
         createReporter('F.3d', 'Federal Reporter Third Series', 'federal', 'reporters'),
         'F.3d',
         new Date('1993-01-01'),
-        null
+        null,
       )
-      
+
       const invalidEdition = createEdition(
         createReporter('F.3d', 'Federal Reporter Third Series', 'federal', 'reporters'),
         'F.3d',
         new Date('2000-01-01'),
-        null
+        null,
       )
-      
+
       // Test valid citation
       const validResult = validateCitationDates(citation, [validEdition])
       expect(validResult.isValid).toBe(true)
       expect(validResult.warnings).toHaveLength(0)
       expect(validResult.recommendedEdition).toBe(validEdition)
-      
+
       // Test invalid citation
       const invalidResult = validateCitationDates(citation, [invalidEdition])
       expect(invalidResult.isValid).toBe(false)
@@ -2998,40 +3014,40 @@ describe('Find Citations', () => {
 
     test('should handle suspicious dates', () => {
       const { validateCitationDates } = require('../src/find')
-      
+
       // Future year citation
       const futureCitation = new FullCaseCitation(
         new Token('123 F.3d 456', 0, 11, {
           volume: '123',
           reporter: 'F.3d',
-          page: '456'
+          page: '456',
         }),
-        0
+        0,
       )
       futureCitation.year = new Date().getFullYear() + 5
-      
+
       const edition = createEdition(
         createReporter('F.3d', 'Federal Reporter Third Series', 'federal', 'reporters'),
         'F.3d',
         new Date('1993-01-01'),
-        null
+        null,
       )
-      
+
       const result = validateCitationDates(futureCitation, [edition])
       expect(result.isValid).toBe(false)
       expect(result.suspiciousDateReasons).toContain(`Future year: ${futureCitation.year}`)
-      
+
       // Very old year citation
       const oldCitation = new FullCaseCitation(
         new Token('123 F.3d 456', 0, 11, {
           volume: '123',
           reporter: 'F.3d',
-          page: '456'
+          page: '456',
         }),
-        0
+        0,
       )
       oldCitation.year = 1500
-      
+
       const oldResult = validateCitationDates(oldCitation, [edition])
       expect(oldResult.suspiciousDateReasons).toContain('Very old year: 1500')
     })
@@ -3056,27 +3072,27 @@ describe('Find Citations', () => {
 
     test('should cache date validation results for performance', () => {
       const { includesYear, clearDateValidationCache } = require('../src/models/reporters')
-      
+
       // Clear cache to start fresh
       clearDateValidationCache()
-      
+
       const edition = createEdition(
         createReporter('F.3d', 'Federal Reporter Third Series', 'federal', 'reporters'),
         'F.3d',
         new Date('1993-01-01'),
-        null
+        null,
       )
-      
+
       // First call should populate cache
       const start = performance.now()
       const result1 = includesYear(edition, 1995)
       const firstCallTime = performance.now() - start
-      
+
       // Second call should be faster (cached)
       const start2 = performance.now()
       const result2 = includesYear(edition, 1995)
       const secondCallTime = performance.now() - start2
-      
+
       expect(result1).toBe(result2)
       expect(result1).toBe(true)
       // Second call should be significantly faster (though timing can be unreliable in tests)
@@ -3084,19 +3100,19 @@ describe('Find Citations', () => {
 
     test('should validate input parameters for includesYear', () => {
       const { includesYear } = require('../src/models/reporters')
-      
+
       const edition = createEdition(
         createReporter('F.3d', 'Federal Reporter Third Series', 'federal', 'reporters'),
         'F.3d',
         new Date('1993-01-01'),
-        null
+        null,
       )
-      
+
       // Invalid year inputs
-      expect(includesYear(edition, 999)).toBe(false)    // Too short
-      expect(includesYear(edition, 10000)).toBe(false)  // Too long
+      expect(includesYear(edition, 999)).toBe(false) // Too short
+      expect(includesYear(edition, 10000)).toBe(false) // Too long
       expect(includesYear(edition, 1995.5)).toBe(false) // Not an integer
-      expect(includesYear(edition, NaN)).toBe(false)    // Not a number
+      expect(includesYear(edition, NaN)).toBe(false) // Not a number
     })
   })
 
@@ -3108,19 +3124,19 @@ describe('Find Citations', () => {
        * 1. Create a custom tokenizer instance
        * 2. Modify existing citation patterns (e.g., replace dots with [.,] to match commas)
        * 3. Test that custom patterns work correctly
-       * 
+       *
        * In the Python version, this test modifies the regex for all extractors to accept
        * commas in place of dots in reporter names (e.g., "U,S," instead of "U.S.").
        */
-      
+
       // Create a custom tokenizer by modifying the default extractors
       const customExtractors = createSpecialExtractors()
-      
+
       // Build custom citation extractors with modified regex
       for (const [reporterStr, reporterList] of Object.entries(REPORTERS)) {
         for (const reporterData of reporterList) {
           const allEditions: Edition[] = []
-          
+
           // Build editions
           for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
             const reporter = new Reporter(
@@ -3130,16 +3146,17 @@ describe('Find Citations', () => {
               editionName,
               editionData.start || undefined,
               editionData.end || undefined,
-              reporterData.cite_type === 'federal' && reporterData.name.includes('United States Reports'),
+              reporterData.cite_type === 'federal' &&
+                reporterData.name.includes('United States Reports'),
               reporterData.mlz_jurisdiction || [],
             )
-            
+
             allEditions.push({
               reporter,
               reporterFound: editionName,
             } as Edition)
           }
-          
+
           // Create extractors with modified regex for each edition
           for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
             // Add custom extractor only for U.S. reporter to test
@@ -3149,30 +3166,30 @@ describe('Find Citations', () => {
               const escapedEdition = modifiedEdition.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
               // Create regex that will match "U,S," as the reporter
               const fullRegex = `(?<volume>\\d+)\\s+(?<reporter>U[.,]S[.,])\\s+(?<page>${PAGE_NUMBER_REGEX})`
-              
-              const specificEdition = allEditions.find(e => e.reporter.editionStr === editionName)
+
+              const specificEdition = allEditions.find((e) => e.reporter.editionStr === editionName)
               const editionsToUse = specificEdition ? [specificEdition] : allEditions
-              
+
               customExtractors.push(
                 createCitationExtractor(
                   fullRegex,
                   editionsToUse,
                   [],
-                  ['U.S.', 'U,S,'],  // Include both patterns in strings
+                  ['U.S.', 'U,S,'], // Include both patterns in strings
                   false,
-                )
+                ),
               )
             }
           }
         }
       }
-      
+
       // Create custom tokenizer with modified extractors
       const customTokenizer = new Tokenizer(customExtractors)
-      
+
       // Test that the custom tokenizer can find citations with commas
       const citations = getCitations('1 U,S, 1', false, customTokenizer)
-      
+
       expect(citations).toHaveLength(1)
       expect(citations[0]).toBeInstanceOf(FullCaseCitation)
       expect(citations[0].groups.volume).toBe('1')
@@ -3185,10 +3202,10 @@ describe('Find Citations', () => {
        * This test demonstrates how to extend the tokenizer by adding new extractors
        * for custom citation formats not in the standard reporters database.
        */
-      
+
       // Start with the special extractors
       const extractors = [...createSpecialExtractors()]
-      
+
       // Create a custom reporter for testing
       const customReporter = new Reporter(
         'neutral',
@@ -3200,32 +3217,24 @@ describe('Find Citations', () => {
         false,
         [],
       )
-      
+
       const customEdition: Edition = {
         reporter: customReporter,
         reporterFound: 'CUSTOM',
         start: null,
         end: null,
       }
-      
+
       // Add a custom citation extractor
       const customRegex = `(?<volume>\\d+)\\s+(?<reporter>CUSTOM)\\s+(?<page>${PAGE_NUMBER_REGEX})`
-      extractors.push(
-        createCitationExtractor(
-          customRegex,
-          [customEdition],
-          [],
-          ['CUSTOM'],
-          false,
-        )
-      )
-      
+      extractors.push(createCitationExtractor(customRegex, [customEdition], [], ['CUSTOM'], false))
+
       // Create tokenizer with custom extractors
       const tokenizer = new Tokenizer(extractors)
-      
+
       // Test the custom citation format
       const citations = getCitations('123 CUSTOM 456', false, tokenizer)
-      
+
       expect(citations).toHaveLength(1)
       expect(citations[0]).toBeInstanceOf(FullCaseCitation)
       expect(citations[0].groups.volume).toBe('123')
@@ -3239,20 +3248,21 @@ describe('Find Citations', () => {
        * based on the text being tokenized, which can improve performance for
        * large-scale processing.
        */
-      
+
       // Create a custom tokenizer that overrides getExtractors
       class FilteringTokenizer extends Tokenizer {
         getExtractors(text: string): TokenExtractor[] {
           // Only use extractors whose strings appear in the text
-          return this.extractors.filter(extractor => {
+          return this.extractors.filter((extractor) => {
             if (!extractor.strings || extractor.strings.length === 0) {
               // Always include extractors without string hints
               return true
             }
-            
+
             // Check if any of the extractor's strings appear in the text
-            return extractor.strings.some(str => {
-              if (extractor.flags && extractor.flags & 2) { // Case insensitive
+            return extractor.strings.some((str) => {
+              if (extractor.flags && extractor.flags & 2) {
+                // Case insensitive
                 return text.toLowerCase().includes(str.toLowerCase())
               }
               return text.includes(str)
@@ -3260,62 +3270,59 @@ describe('Find Citations', () => {
           })
         }
       }
-      
+
       // Create a filtering tokenizer with default extractors
-      const allExtractors = [
-        ...createSpecialExtractors(),
-        ...buildCitationExtractors(),
-      ]
+      const allExtractors = [...createSpecialExtractors(), ...buildCitationExtractors()]
       const filteringTokenizer = new FilteringTokenizer(allExtractors)
-      
+
       // Test that it still finds citations correctly
       const citations1 = getCitations('See id. at 5', false, filteringTokenizer)
       expect(citations1).toHaveLength(1)
       expect(citations1[0]).toBeInstanceOf(IdCitation)
-      
+
       // Test with a regular citation
       const citations2 = getCitations('123 U.S. 456', false, filteringTokenizer)
       expect(citations2).toHaveLength(1)
       expect(citations2[0]).toBeInstanceOf(FullCaseCitation)
-      
+
       // Verify that filtering is working by checking extractor count
       const idText = 'See id. at 5'
       const idExtractors = filteringTokenizer.getExtractors(idText)
       const allExtractorsCount = allExtractors.length
-      
+
       // Should have fewer extractors when filtering
       expect(idExtractors.length).toBeLessThan(allExtractorsCount)
-      
+
       // Should include the id extractor
-      const hasIdExtractor = idExtractors.some(e => 
-        e.strings?.includes('id.') || e.strings?.includes('ibid.')
+      const hasIdExtractor = idExtractors.some(
+        (e) => e.strings?.includes('id.') || e.strings?.includes('ibid.'),
       )
       expect(hasIdExtractor).toBe(true)
     })
 
     /**
      * Documentation: Extending the Tokenizer
-     * 
+     *
      * The TypeScript eyecite tokenizer can be extended in several ways:
-     * 
+     *
      * 1. **Custom Regex Patterns**: Modify existing patterns or add new ones
      *    by creating custom extractors with different regex patterns.
-     * 
+     *
      * 2. **Custom Reporters**: Add support for new reporter formats by creating
      *    Reporter instances and associated extractors.
-     * 
+     *
      * 3. **Performance Optimization**: Use the AhocorasickTokenizer for better
      *    performance with large text, or create a custom tokenizer that filters
      *    extractors based on text content.
-     * 
+     *
      * 4. **Custom Token Types**: While not shown here, you can create new Token
      *    subclasses and extractors to recognize different types of legal references.
-     * 
+     *
      * Example of creating a fully custom tokenizer:
-     * 
+     *
      * ```typescript
      * import { Tokenizer, BaseTokenExtractor } from 'eyecite'
-     * 
+     *
      * // Define custom extractors
      * const myExtractors = [
      *   new BaseTokenExtractor(
@@ -3327,10 +3334,10 @@ describe('Find Citations', () => {
      *   ),
      *   // ... more extractors
      * ]
-     * 
+     *
      * // Create custom tokenizer
      * const myTokenizer = new Tokenizer(myExtractors)
-     * 
+     *
      * // Use with getCitations
      * const citations = getCitations(text, false, myTokenizer)
      * ```
@@ -3340,12 +3347,12 @@ describe('Find Citations', () => {
   // Helper function moved inside the describe block
   function buildCitationExtractors(): TokenExtractor[] {
     const extractors: TokenExtractor[] = []
-    
+
     // Simplified version that only builds a few key extractors for testing
     for (const [reporterStr, reporterList] of Object.entries(REPORTERS)) {
       for (const reporterData of reporterList) {
         const allEditions: Edition[] = []
-        
+
         for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
           const reporter = new Reporter(
             reporterData.cite_type,
@@ -3354,39 +3361,34 @@ describe('Find Citations', () => {
             editionName,
             editionData.start || undefined,
             editionData.end || undefined,
-            reporterData.cite_type === 'federal' && reporterData.name.includes('United States Reports'),
+            reporterData.cite_type === 'federal' &&
+              reporterData.name.includes('United States Reports'),
             reporterData.mlz_jurisdiction || [],
           )
-          
+
           allEditions.push({
             reporter,
             reporterFound: editionName,
           } as Edition)
         }
-        
+
         // Only add extractors for U.S. reporter for this test
         if (reporterStr === 'U.S.') {
           for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
             const escapedEdition = editionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             const fullRegex = `(?<volume>\\d+)\\s+(?<reporter>${escapedEdition})\\s+(?<page>${PAGE_NUMBER_REGEX})`
-            
-            const specificEdition = allEditions.find(e => e.reporter.editionStr === editionName)
+
+            const specificEdition = allEditions.find((e) => e.reporter.editionStr === editionName)
             const editionsToUse = specificEdition ? [specificEdition] : allEditions
-            
+
             extractors.push(
-              createCitationExtractor(
-                fullRegex,
-                editionsToUse,
-                [],
-                [editionName],
-                false,
-              )
+              createCitationExtractor(fullRegex, editionsToUse, [], [editionName], false),
             )
           }
         }
       }
     }
-    
+
     return extractors
   }
 
@@ -3399,337 +3401,348 @@ describe('Find Citations', () => {
       //
       // See MARKUP_SUPPORT_STATUS.md for details on what needs to be implemented.
       // When HTML support is added, this test should be enabled.
-      
+
       const testCases = [
         // Case Name unbalanced across two tags
         {
-          input: "and more and more <em>Jin Fuey Moy</em><em>v. United States,</em>\n            254 U.S. 189. Petitioner contends",
+          input:
+            'and more and more <em>Jin Fuey Moy</em><em>v. United States,</em>\n            254 U.S. 189. Petitioner contends',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "254",
-              reporter: "U.S.",
-              page: "189",
+              volume: '254',
+              reporter: 'U.S.',
+              page: '189',
               metadata: {
-                plaintiff: "Jin Fuey Moy",
-                defendant: "United States",
+                plaintiff: 'Jin Fuey Moy',
+                defendant: 'United States',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Extract from one tag and ignore the other
         {
-          input: "<em>Overruled</em> and so on <em>Jin Fuey Moy v. United States,</em> 254 U.S. 189. Petitioner contends",
+          input:
+            '<em>Overruled</em> and so on <em>Jin Fuey Moy v. United States,</em> 254 U.S. 189. Petitioner contends',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "254",
-              reporter: "U.S.",
-              page: "189",
+              volume: '254',
+              reporter: 'U.S.',
+              page: '189',
               metadata: {
-                plaintiff: "Jin Fuey Moy",
-                defendant: "United States",
+                plaintiff: 'Jin Fuey Moy',
+                defendant: 'United States',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Split across tags with v. in defendant
         {
-          input: "<em>Overruled</em> and so on <em>Jin Fuey Moy</em> <em>v. United States,</em> 254 U.S. 189. Petitioner contends",
+          input:
+            '<em>Overruled</em> and so on <em>Jin Fuey Moy</em> <em>v. United States,</em> 254 U.S. 189. Petitioner contends',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "254",
-              reporter: "U.S.",
-              page: "189",
+              volume: '254',
+              reporter: 'U.S.',
+              page: '189',
               metadata: {
-                plaintiff: "Jin Fuey Moy",
-                defendant: "United States",
+                plaintiff: 'Jin Fuey Moy',
+                defendant: 'United States',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Corporation name three words
         {
-          input: "<em>Bell Atlantic Corp. </em>v. <em>Twombly, </em>550 U. S. 544 (2007),",
+          input: '<em>Bell Atlantic Corp. </em>v. <em>Twombly, </em>550 U. S. 544 (2007),',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "550",
-              reporter: "U. S.",
-              page: "544",
+              volume: '550',
+              reporter: 'U. S.',
+              page: '544',
               year: 2007,
               metadata: {
-                plaintiff: "Bell Atlantic Corp.",
-                defendant: "Twombly",
-                year: "2007",
-                court: "scotus",
+                plaintiff: 'Bell Atlantic Corp.',
+                defendant: 'Twombly',
+                year: '2007',
+                court: 'scotus',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Two word plaintiff
         {
-          input: "con-firmable. <em>United States v. Am. Sav. Bank, </em> 508 U.S. 324 (1993). That plan proposed to bifurcate the claim and",
+          input:
+            'con-firmable. <em>United States v. Am. Sav. Bank, </em> 508 U.S. 324 (1993). That plan proposed to bifurcate the claim and',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "508",
-              reporter: "U.S.",
-              page: "324",
+              volume: '508',
+              reporter: 'U.S.',
+              page: '324',
               year: 1993,
               metadata: {
-                plaintiff: "United States",
-                defendant: "Am. Sav. Bank",
-                year: "1993",
-                court: "scotus",
+                plaintiff: 'United States',
+                defendant: 'Am. Sav. Bank',
+                year: '1993',
+                court: 'scotus',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Extract reference citation full name
         {
-          input: ". <em>Jin Fuey Moy</em> <em>v. United States,</em> 254 U.S. 189. Petitioner contends.  Regardless in <em>Jin Fuey Moy</em> the court ruled",
+          input:
+            '. <em>Jin Fuey Moy</em> <em>v. United States,</em> 254 U.S. 189. Petitioner contends.  Regardless in <em>Jin Fuey Moy</em> the court ruled',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "254",
-              reporter: "U.S.",
-              page: "189",
+              volume: '254',
+              reporter: 'U.S.',
+              page: '189',
               metadata: {
-                plaintiff: "Jin Fuey Moy",
-                defendant: "United States",
+                plaintiff: 'Jin Fuey Moy',
+                defendant: 'United States',
               },
             },
             {
               type: ReferenceCitation,
-              metadata: { plaintiff: "Jin Fuey Moy" },
-            }
+              metadata: { plaintiff: 'Jin Fuey Moy' },
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Extract out with whitespace across two tags
         {
-          input: '<p id="b453-6">\n  The supreme court of Connecticut, in\n  <em>\n   Beardsley\n  </em>\n  v.\n  <em>\n   Hartford,\n  </em>\n  50 Conn. 529, 541-542, after quoting the maxim of the common law;\n  <em>\n   cessante ratione legis-, cessat ipsa lex,\n  </em>',
+          input:
+            '<p id="b453-6">\n  The supreme court of Connecticut, in\n  <em>\n   Beardsley\n  </em>\n  v.\n  <em>\n   Hartford,\n  </em>\n  50 Conn. 529, 541-542, after quoting the maxim of the common law;\n  <em>\n   cessante ratione legis-, cessat ipsa lex,\n  </em>',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "50",
-              reporter: "Conn.",
-              page: "529",
+              volume: '50',
+              reporter: 'Conn.',
+              page: '529',
               metadata: {
-                plaintiff: "Beardsley",
-                defendant: "Hartford",
-                pinCite: "541-542",
+                plaintiff: 'Beardsley',
+                defendant: 'Hartford',
+                pinCite: '541-542',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Identify reference
         {
-          input: " partially secured by a debtor's principal residence was not con-firmable. <em>Smart Nobelman v. Am. Sav. Bank, </em>508 U.S. 324 (1993). That plan proposed to bifurcate the claim and... pay the unsecured... only by a lien on the debtor's principal residence.codifies the <em>Smart Nobelman </em>decision in individual debtor chapter 11 cases.",
+          input:
+            " partially secured by a debtor's principal residence was not con-firmable. <em>Smart Nobelman v. Am. Sav. Bank, </em>508 U.S. 324 (1993). That plan proposed to bifurcate the claim and... pay the unsecured... only by a lien on the debtor's principal residence.codifies the <em>Smart Nobelman </em>decision in individual debtor chapter 11 cases.",
           expected: [
             {
               type: FullCaseCitation,
-              volume: "508",
-              reporter: "U.S.",
-              page: "324",
+              volume: '508',
+              reporter: 'U.S.',
+              page: '324',
               metadata: {
-                plaintiff: "Smart Nobelman",
-                defendant: "Am. Sav. Bank",
-                year: "1993",
+                plaintiff: 'Smart Nobelman',
+                defendant: 'Am. Sav. Bank',
+                year: '1993',
               },
             },
             {
               type: ReferenceCitation,
-              metadata: { plaintiff: "Smart Nobelman" },
-            }
+              metadata: { plaintiff: 'Smart Nobelman' },
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Add antecedent guess to check
         {
-          input: "the court in <em>Smith Johnson</em>, 1 U. S., at 2",
+          input: 'the court in <em>Smith Johnson</em>, 1 U. S., at 2',
           expected: [
             {
               type: ShortCaseCitation,
-              page: "2",
-              groups: { reporter: "U. S." },
+              page: '2',
+              groups: { reporter: 'U. S.' },
               short: true,
-              metadata: { antecedentGuess: "Smith Johnson" },
-            }
+              metadata: { antecedentGuess: 'Smith Johnson' },
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Make sure not to overwrite good data if this method doesn't work
         {
-          input: "Judge Regan (dissenting) in <i>Thrift Funds Canal,</i> Inc. v. Foy, 242 So.2d 253, 257 (La.App. 4 Cir. 1970), calls",
+          input:
+            'Judge Regan (dissenting) in <i>Thrift Funds Canal,</i> Inc. v. Foy, 242 So.2d 253, 257 (La.App. 4 Cir. 1970), calls',
           expected: [
             {
               type: FullCaseCitation,
-              page: "253",
-              reporter: "So.2d",
-              volume: "242",
+              page: '253',
+              reporter: 'So.2d',
+              volume: '242',
               short: false,
               metadata: {
-                plaintiff: "Thrift Funds Canal, Inc.",
-                defendant: "Foy",
-                pinCite: "257",
-                year: "1970",
+                plaintiff: 'Thrift Funds Canal, Inc.',
+                defendant: 'Foy',
+                pinCite: '257',
+                year: '1970',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Eyecite has issue with linebreaks when identifying defendants
         {
-          input: "<em>\n   Smart v. Tatum,\n  </em>\n \n  541 U.S. 1085 (2004);\n  <em>\n",
+          input: '<em>\n   Smart v. Tatum,\n  </em>\n \n  541 U.S. 1085 (2004);\n  <em>\n',
           expected: [
             {
               type: FullCaseCitation,
-              page: "1085",
-              volume: "541",
-              reporter: "U.S.",
+              page: '1085',
+              volume: '541',
+              reporter: 'U.S.',
               year: 2004,
               metadata: {
-                plaintiff: "Smart",
-                defendant: "Tatum",
-                court: "scotus",
+                plaintiff: 'Smart',
+                defendant: 'Tatum',
+                court: 'scotus',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "inline_whitespace"] },
+          options: { cleanSteps: ['html', 'inline_whitespace'] },
         },
-        
+
         // Test extraction without clean_steps defaults
         {
-          input: "Craig v. Harrah, ___ Nev. ___ [201 P.2d 1081]. (",
+          input: 'Craig v. Harrah, ___ Nev. ___ [201 P.2d 1081]. (',
           expected: [
             {
               type: FullCaseCitation,
-              page: "1081",
-              volume: "201",
-              reporter: "P.2d",
+              page: '1081',
+              volume: '201',
+              reporter: 'P.2d',
               short: false,
               metadata: {
-                plaintiff: "Craig",
-                defendant: "Harrah",
+                plaintiff: 'Craig',
+                defendant: 'Harrah',
               },
-            }
+            },
           ],
           options: {},
         },
-        
+
         // Tricky scotus fake cites if junk is in between remove it
         {
-          input: " <i>United States</i> v. <i>Hodgson,</i> ___ Iowa ___, 44 N.J. 151, 207 A. 2d 542;",
+          input:
+            ' <i>United States</i> v. <i>Hodgson,</i> ___ Iowa ___, 44 N.J. 151, 207 A. 2d 542;',
           expected: [
             {
               type: FullCaseCitation,
-              page: "151",
-              volume: "44",
-              reporter: "N.J.",
+              page: '151',
+              volume: '44',
+              reporter: 'N.J.',
               short: false,
               metadata: {
-                plaintiff: "United States",
-                defendant: "Hodgson",
+                plaintiff: 'United States',
+                defendant: 'Hodgson',
               },
             },
             {
               type: FullCaseCitation,
-              page: "542",
-              volume: "207",
-              reporter: "A. 2d",
+              page: '542',
+              volume: '207',
+              reporter: 'A. 2d',
               short: false,
               metadata: {
-                plaintiff: "United States",
-                defendant: "Hodgson",
+                plaintiff: 'United States',
+                defendant: 'Hodgson',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Tricky scotus fake cites - ex rel
         {
-          input: " <i>United States ex rel. Russo v. New Jersey</i>, 351 F.2d 429 something something",
+          input:
+            ' <i>United States ex rel. Russo v. New Jersey</i>, 351 F.2d 429 something something',
           expected: [
             {
               type: FullCaseCitation,
-              page: "429",
-              volume: "351",
-              reporter: "F.2d",
+              page: '429',
+              volume: '351',
+              reporter: 'F.2d',
               short: false,
               metadata: {
-                plaintiff: "United States ex rel. Russo",
-                defendant: "New Jersey",
+                plaintiff: 'United States ex rel. Russo',
+                defendant: 'New Jersey',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Identify pincite reference
         {
-          input: " partially secured by a debtor's principal residence was not con-firmable. <em>Nobelman v. Am. Sav. Bank, </em>508 U.S. 324 (1993). That plan proposed to bifurcate the claim and... pay the unsecured... only by a lien on the debtor's principal residence.codifies the  a lien on the debtor's principal residence.<em>Nobelman </em>at 332, decision in individual debtor chapter 11 cases.",
+          input:
+            " partially secured by a debtor's principal residence was not con-firmable. <em>Nobelman v. Am. Sav. Bank, </em>508 U.S. 324 (1993). That plan proposed to bifurcate the claim and... pay the unsecured... only by a lien on the debtor's principal residence.codifies the  a lien on the debtor's principal residence.<em>Nobelman </em>at 332, decision in individual debtor chapter 11 cases.",
           expected: [
             {
               type: FullCaseCitation,
-              volume: "508",
-              reporter: "U.S.",
-              page: "324",
+              volume: '508',
+              reporter: 'U.S.',
+              page: '324',
               metadata: {
-                plaintiff: "Nobelman",
-                defendant: "Am. Sav. Bank",
-                year: "1993",
+                plaintiff: 'Nobelman',
+                defendant: 'Am. Sav. Bank',
+                year: '1993',
               },
             },
             {
               type: ReferenceCitation,
               metadata: {
-                plaintiff: "Nobelman",
-                pinCite: "at 332",
+                plaintiff: 'Nobelman',
+                pinCite: 'at 332',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Remove the See at the start and handle other tags
         {
           input: `<i>See <span class="SpellE">DeSantis</span> v. Wackenhut Corp.</i>, 793 S.W.2d 670;`,
           expected: [
             {
               type: FullCaseCitation,
-              page: "670",
-              reporter: "S.W.2d",
-              volume: "793",
+              page: '670',
+              reporter: 'S.W.2d',
+              volume: '793',
               short: false,
               metadata: {
-                plaintiff: "DeSantis",
-                defendant: "Wackenhut Corp.",
+                plaintiff: 'DeSantis',
+                defendant: 'Wackenhut Corp.',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Antecedent guess
         {
           input: `</span>§ 3.1 (2d ed. 1977), <i>Strawberry Hill</i>, 725 S.W.2d at 176 (Gonzalez, J., dissenting);`,
@@ -3739,20 +3752,20 @@ describe('Find Citations', () => {
             },
             {
               type: ShortCaseCitation,
-              page: "176",
-              reporter: "S.W.2d",
-              volume: "725",
+              page: '176',
+              reporter: 'S.W.2d',
+              volume: '725',
               short: true,
               metadata: {
-                antecedentGuess: "Strawberry Hill",
-                pinCite: "176",
-                parenthetical: "Gonzalez, J., dissenting",
+                antecedentGuess: 'Strawberry Hill',
+                pinCite: '176',
+                parenthetical: 'Gonzalez, J., dissenting',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Stop word inside tag
         {
           input: `</span>§ 3.1 (2d ed. 1977), <i>(See Hill</i>, 725 S.W.2d at 176 (Gonzalez, J., dissenting));`,
@@ -3762,59 +3775,59 @@ describe('Find Citations', () => {
             },
             {
               type: ShortCaseCitation,
-              page: "176",
-              reporter: "S.W.2d",
-              volume: "725",
+              page: '176',
+              reporter: 'S.W.2d',
+              volume: '725',
               short: true,
               metadata: {
-                antecedentGuess: "Hill",
-                pinCite: "176",
-                parenthetical: "Gonzalez, J., dissenting",
+                antecedentGuess: 'Hill',
+                pinCite: '176',
+                parenthetical: 'Gonzalez, J., dissenting',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Handle embedded pagination
         {
           input: `<i>United States</i> v. <i>Carignan,</i> <span class="star-pagination">*528</span> 342 U. S. 36, 41;`,
           expected: [
             {
               type: FullCaseCitation,
-              page: "36",
-              volume: "342",
-              reporter: "U. S.",
+              page: '36',
+              volume: '342',
+              reporter: 'U. S.',
               short: false,
               metadata: {
-                plaintiff: "United States",
-                defendant: "Carignan",
-                pinCite: "41",
-                court: "scotus",
+                plaintiff: 'United States',
+                defendant: 'Carignan',
+                pinCite: '41',
+                court: 'scotus',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Better support Louisiana with proper extraction of defendant
         {
           input: `objection. <i>Our Lady of the Lake Hosp. v. Vanner,</i> 95-0754, p. 3 (La.App. 1 Cir. 12/15/95), 669 So.2d 463, 464;`,
           expected: [
             {
               type: FullCaseCitation,
-              page: "463",
-              volume: "669",
-              reporter: "So.2d",
+              page: '463',
+              volume: '669',
+              reporter: 'So.2d',
               short: false,
               metadata: {
-                plaintiff: "Our Lady of the Lake Hosp.",
-                defendant: "Vanner",
-                pinCite: "464",
+                plaintiff: 'Our Lady of the Lake Hosp.',
+                defendant: 'Vanner',
+                pinCite: '464',
               },
             },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
       ]
 
@@ -3823,7 +3836,9 @@ describe('Find Citations', () => {
         try {
           assertCitations(testCase.input, testCase.expected, testCase.options)
         } catch (error) {
-          throw new Error(`Test case ${index + 1} failed: ${error.message}\nInput: ${testCase.input}`)
+          throw new Error(
+            `Test case ${index + 1} failed: ${error.message}\nInput: ${testCase.input}`,
+          )
         }
       })
     })
@@ -3834,68 +3849,69 @@ describe('Find Citations', () => {
       const testCases = [
         // Basic citation extraction from HTML (without expecting case name extraction from tags)
         {
-          input: "and more and more <em>Jin Fuey Moy</em><em>v. United States,</em>\n            254 U.S. 189. Petitioner contends",
+          input:
+            'and more and more <em>Jin Fuey Moy</em><em>v. United States,</em>\n            254 U.S. 189. Petitioner contends',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "254",
-              reporter: "U.S.",
-              page: "189",
+              volume: '254',
+              reporter: 'U.S.',
+              page: '189',
               // Note: Not expecting plaintiff/defendant from HTML tags yet
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "all_whitespace"] },
+          options: { cleanSteps: ['html', 'all_whitespace'] },
         },
-        
+
         // Plain text case name extraction should still work
         {
-          input: "Jin Fuey Moy v. United States, 254 U.S. 189. Petitioner contends",
+          input: 'Jin Fuey Moy v. United States, 254 U.S. 189. Petitioner contends',
           expected: [
             {
               type: FullCaseCitation,
-              volume: "254",
-              reporter: "U.S.",
-              page: "189",
+              volume: '254',
+              reporter: 'U.S.',
+              page: '189',
               metadata: {
-                plaintiff: "Jin Fuey Moy",
-                defendant: "United States",
+                plaintiff: 'Jin Fuey Moy',
+                defendant: 'United States',
               },
-            }
+            },
           ],
-          options: { cleanSteps: ["all_whitespace"] },
+          options: { cleanSteps: ['all_whitespace'] },
         },
-        
+
         // Linebreak handling with clean steps
         {
-          input: "<em>\n   Smart v. Tatum,\n  </em>\n \n  541 U.S. 1085 (2004);\n  <em>\n",
+          input: '<em>\n   Smart v. Tatum,\n  </em>\n \n  541 U.S. 1085 (2004);\n  <em>\n',
           expected: [
             {
               type: FullCaseCitation,
-              page: "1085",
-              volume: "541",
-              reporter: "U.S.",
+              page: '1085',
+              volume: '541',
+              reporter: 'U.S.',
               year: 2004,
               // Note: Not expecting case name extraction from HTML in current implementation
-            }
+            },
           ],
-          options: { cleanSteps: ["html", "inline_whitespace"] },
+          options: { cleanSteps: ['html', 'inline_whitespace'] },
         },
-        
+
         // Citation without HTML markup should work normally
         {
-          input: "Craig v. Harrah, ___ Nev. ___ [201 P.2d 1081]. (",
+          input: 'Craig v. Harrah, ___ Nev. ___ [201 P.2d 1081]. (',
           expected: [
             {
               type: FullCaseCitation,
-              page: "1081",
-              volume: "201",
-              reporter: "P.2d",
+              page: '1081',
+              volume: '201',
+              reporter: 'P.2d',
               short: false,
               metadata: {
-                plaintiff: "Craig",
-                defendant: "Harrah",
+                plaintiff: 'Craig',
+                defendant: 'Harrah',
               },
-            }
+            },
           ],
           options: {},
         },
@@ -3906,7 +3922,9 @@ describe('Find Citations', () => {
         try {
           assertCitations(testCase.input, testCase.expected, testCase.options)
         } catch (error) {
-          throw new Error(`Test case ${index + 1} failed: ${error.message}\nInput: ${testCase.input}`)
+          throw new Error(
+            `Test case ${index + 1} failed: ${error.message}\nInput: ${testCase.input}`,
+          )
         }
       })
     })
@@ -3919,29 +3937,29 @@ describe('Find Citations', () => {
        * warning should be emitted.
        */
       const consoleWarnSpy = spyOn(console, 'warn')
-      
-      const text = "Gotthelf v. Toyota Motor Sales, U.S.A., Inc., 525 F. App'x 94, 103 n.15 (3d Cir. 2013) (quoting Iqbal, 556 U.S. at 686-87)."
+
+      const text =
+        "Gotthelf v. Toyota Motor Sales, U.S.A., Inc., 525 F. App'x 94, 103 n.15 (3d Cir. 2013) (quoting Iqbal, 556 U.S. at 686-87)."
       const citations = getCitations(text)
-      
+
       expect(citations).toHaveLength(2)
       expect(consoleWarnSpy).toHaveBeenCalledTimes(0)
-      
+
       // Verify the citations found match expectations from Python test
       expect(citations[0]).toBeInstanceOf(FullCaseCitation)
       expect(citations[1]).toBeInstanceOf(ShortCaseCitation)
-      
+
       // Verify the main citation details
       expect(citations[0].groups.volume).toBe('525')
-      expect(citations[0].groups.reporter).toBe('F. App\'x')
+      expect(citations[0].groups.reporter).toBe("F. App'x")
       expect(citations[0].groups.page).toBe('94')
-      
+
       // Verify the parenthetical citation details
       expect(citations[1].groups.volume).toBe('556')
       expect(citations[1].groups.reporter).toBe('U.S.')
       expect(citations[1].groups.page).toBe('686')
-      
+
       consoleWarnSpy.mockRestore()
     })
-
   })
 })

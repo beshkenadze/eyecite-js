@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { annotateCitations } from '../src/annotate'
-import { getCitations } from '../src/find'
 import { cleanText } from '../src/clean'
+import { getCitations } from '../src/find'
 
 describe('Annotate Citations', () => {
   describe('Basic Annotation', () => {
@@ -53,7 +53,7 @@ describe('Annotate Citations', () => {
     test('should support custom annotation function', () => {
       const text = 'See 1 U.S. 1.'
       const annotated = annotateCitations(text, {
-        annotateFunc: (_citation, text) => `[CITE: ${text}]`
+        annotateFunc: (_citation, text) => `[CITE: ${text}]`,
       })
       expect(annotated).toBe('See [CITE: 1 U.S. 1].')
     })
@@ -65,7 +65,7 @@ describe('Annotate Citations', () => {
         annotateFunc: (citation) => {
           capturedCitation = citation
           return ''
-        }
+        },
       })
       expect(capturedCitation.metadata.plaintiff).toBe('Lissner')
       expect(capturedCitation.year).toBe(1982)
@@ -90,4 +90,3 @@ describe('Annotate Citations', () => {
     })
   })
 })
-

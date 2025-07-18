@@ -1,39 +1,41 @@
 // Main exports for eyecite TypeScript library
 
+export type { AnnotationOptions } from './annotate'
+// Annotation functions
+export { annotate, annotateCitations, annotateCitationsHtml } from './annotate'
+export { cleanersLookup, cleanText } from './clean'
+// Data and utilities
+export { COURTS, REPORTERS } from './data'
+// Main functions
+export { extractReferenceCitations, getCitations } from './find'
+export { disambiguateReporters, filterCitations } from './helpers'
 // Core models and types
 export {
-  CitationBase,
-  FullCaseCitation,
-  FullLawCitation,
-  FullJournalCitation,
-  ShortCaseCitation,
-  SupraCitation,
-  IdCitation,
-  ReferenceCitation,
-  UnknownCitation,
-  ResourceCitation,
   CaseCitation,
+  CitationBase,
   CitationToken,
+  FullCaseCitation,
+  FullJournalCitation,
+  FullLawCitation,
+  IdCitation,
   type IdToken,
-  type SupraToken,
+  ReferenceCitation,
+  ResourceCitation,
+  ShortCaseCitation,
   type StopWordToken,
+  SupraCitation,
+  type SupraToken,
+  UnknownCitation,
 } from './models'
-
-// Main functions
-export { getCitations, extractReferenceCitations } from './find'
 export { resolveCitations, resolveFullCitation } from './resolve'
-export { cleanText, cleanersLookup } from './clean'
-
-// Tokenizers
-export { DefaultTokenizer, Tokenizer, CustomTokenizer, RegexPatternBuilder, AhocorasickTokenizer, BaseTokenExtractor } from './tokenizers'
-
-// Data and utilities
-export { REPORTERS, COURTS } from './data'
-export { filterCitations, disambiguateReporters } from './helpers'
-
-// Annotation functions
-export { annotateCitations, annotateCitationsHtml, annotate } from './annotate'
-export type { AnnotationOptions } from './annotate'
-
 // Utilities
-export { SpanUpdater, bisectLeft, bisectRight } from './span-updater'
+export { bisectLeft, bisectRight, SpanUpdater } from './span-updater'
+// Tokenizers
+export {
+  AhocorasickTokenizer,
+  BaseTokenExtractor,
+  CustomTokenizer,
+  DefaultTokenizer,
+  RegexPatternBuilder,
+  Tokenizer,
+} from './tokenizers'

@@ -6,16 +6,16 @@ import type {
   ShortCaseCitation,
   SupraCitation,
 } from './models'
-import { 
-  Resource, 
-  type FullCitation,
+import {
   FullCaseCitation,
-  FullLawCitation,
+  type FullCitation,
   FullJournalCitation,
+  FullLawCitation,
+  IdCitation as IdCitationClass,
+  ReferenceCitation as ReferenceCitationClass,
+  Resource,
   ShortCaseCitation as ShortCaseCitationClass,
   SupraCitation as SupraCitationClass,
-  ReferenceCitation as ReferenceCitationClass,
-  IdCitation as IdCitationClass,
 } from './models'
 import { stripPunct } from './utils'
 
@@ -44,17 +44,15 @@ function filterByMatchingAntecedent(
 ): ResourceType | null {
   const matches: ResourceType[] = []
   const ag = stripPunct(antecedentGuess)
-  
+
   for (const [fullCitation, resource] of resolvedFullCites) {
     if (!(fullCitation instanceof FullCaseCitation)) {
       continue
     }
-    
+
     if (
-      (fullCitation.metadata.defendant && 
-       ag && fullCitation.metadata.defendant.includes(ag)) ||
-      (fullCitation.metadata.plaintiff && 
-       ag && fullCitation.metadata.plaintiff.includes(ag))
+      (fullCitation.metadata.defendant && ag && fullCitation.metadata.defendant.includes(ag)) ||
+      (fullCitation.metadata.plaintiff && ag && fullCitation.metadata.plaintiff.includes(ag))
     ) {
       matches.push(resource)
     }
@@ -76,8 +74,13 @@ function filterByMatchingPlaintiffOrDefendantOrResolvedNames(
 
   // Get reference values from the citation
   const referenceValues = new Set<string>()
-  const nameFields = ['plaintiff', 'defendant', 'resolvedCaseNameShort', 'resolvedCaseName'] as const
-  
+  const nameFields = [
+    'plaintiff',
+    'defendant',
+    'resolvedCaseNameShort',
+    'resolvedCaseName',
+  ] as const
+
   for (const key of nameFields) {
     const value = referenceCitation.metadata[key]
     if (value) {
@@ -88,7 +91,7 @@ function filterByMatchingPlaintiffOrDefendantOrResolvedNames(
   // Check each full citation for matching values
   for (const [citation, resource] of resolvedFullCites) {
     const fullCiteValues = new Set<string>()
-    
+
     // Collect non-null values from citation metadata
     for (const value of Object.values(citation.metadata)) {
       if (value && typeof value === 'string') {
@@ -97,10 +100,10 @@ function filterByMatchingPlaintiffOrDefendantOrResolvedNames(
     }
 
     // Check for intersection
-    const hasMatch = Array.from(referenceValues).some(
-      refValue => Array.from(fullCiteValues).includes(refValue)
+    const hasMatch = Array.from(referenceValues).some((refValue) =>
+      Array.from(fullCiteValues).includes(refValue),
     )
-    
+
     if (hasMatch) {
       matches.push(resource)
     }
@@ -115,10 +118,7 @@ function filterByMatchingPlaintiffOrDefendantOrResolvedNames(
  */
 function hasInvalidPinCite(fullCite: FullCitation, idCite: IdCitation): boolean {
   // If full cite has a known missing page, this pin cite can't be correct
-  if (
-    fullCite instanceof FullCaseCitation &&
-    fullCite.groups.page === null
-  ) {
+  if (fullCite instanceof FullCaseCitation && fullCite.groups.page === null) {
     return true
   }
 
@@ -157,7 +157,7 @@ function resolveShortcaseCitation(
   resolvedFullCites: ResolvedFullCites,
 ): ResourceType | null {
   const candidates: ResolvedFullCites = []
-  
+
   for (const [fullCitation, resource] of resolvedFullCites) {
     if (
       fullCitation instanceof FullCaseCitation &&
@@ -176,10 +176,7 @@ function resolveShortcaseCitation(
 
   // Otherwise, if there is an antecedent guess, try to refine further
   if (shortCitation.metadata.antecedentGuess) {
-    return filterByMatchingAntecedent(
-      candidates,
-      shortCitation.metadata.antecedentGuess,
-    )
+    return filterByMatchingAntecedent(candidates, shortCitation.metadata.antecedentGuess)
   }
 
   return null
@@ -197,10 +194,7 @@ function resolveSupraCitation(
     return null
   }
 
-  return filterByMatchingAntecedent(
-    resolvedFullCites,
-    supraCitation.metadata.antecedentGuess,
-  )
+  return filterByMatchingAntecedent(resolvedFullCites, supraCitation.metadata.antecedentGuess)
 }
 
 /**
@@ -218,11 +212,8 @@ function resolveReferenceCitation(
   ) {
     return null
   }
-  
-  return filterByMatchingPlaintiffOrDefendantOrResolvedNames(
-    resolvedFullCites,
-    referenceCitation,
-  )
+
+  return filterByMatchingPlaintiffOrDefendantOrResolvedNames(resolvedFullCites, referenceCitation)
 }
 
 /**
@@ -243,7 +234,7 @@ function resolveIdCitation(
   if (!citations || citations.length === 0) {
     return null
   }
-  
+
   const fullCite = citations[0] as FullCitation
   if (hasInvalidPinCite(fullCite, idCitation)) {
     return null
@@ -254,11 +245,11 @@ function resolveIdCitation(
 
 /**
  * Resolve a list of citations to their associated resources
- * 
+ *
  * This function assumes that the given list of citations is ordered in the
  * order that they were extracted from the text (i.e., assumes that supra
  * citations and id citations can only refer to previous references).
- * 
+ *
  * @param citations List of citations to resolve
  * @param resolvers Optional custom resolution functions
  * @returns Map of resources to their associated citations
@@ -309,9 +300,11 @@ export function resolveCitations(
     let resolution: ResourceType | null = null
 
     // If the citation is a full citation, try to resolve it
-    if (citation instanceof FullCaseCitation || 
-        citation instanceof FullLawCitation || 
-        citation instanceof FullJournalCitation) {
+    if (
+      citation instanceof FullCaseCitation ||
+      citation instanceof FullLawCitation ||
+      citation instanceof FullJournalCitation
+    ) {
       resolution = fullResolver(citation as FullCitation)
       resolvedFullCites.push([citation as FullCitation, resolution])
     }

@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  createEdition,
+  createReporter,
   FullCaseCitation,
   IdCitation,
   SupraCitation,
   Token,
-  createEdition,
-  createReporter,
 } from '../src/models'
 
 describe('Models', () => {
@@ -35,7 +35,12 @@ describe('Models', () => {
 
   describe('Reporter and Edition', () => {
     test('should create a reporter', () => {
-      const reporter = createReporter('U.S.', 'United States Supreme Court Reports', 'federal', 'reporters')
+      const reporter = createReporter(
+        'U.S.',
+        'United States Supreme Court Reports',
+        'federal',
+        'reporters',
+      )
       expect(reporter.shortName).toBe('U.S.')
       expect(reporter.name).toBe('United States Supreme Court Reports')
       expect(reporter.isScotus).toBe(true)
@@ -78,7 +83,7 @@ describe('Models', () => {
       const token2 = new Token('Id.', 0, 3)
       const citation1 = new IdCitation(token1, 0)
       const citation2 = new IdCitation(token2, 1)
-      
+
       // Each IdCitation should have a unique hash
       expect(citation1.hash()).not.toBe(citation2.hash())
     })

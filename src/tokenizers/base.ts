@@ -122,7 +122,7 @@ export abstract class Tokenizer {
    */
   removeExtractors(predicate: (extractor: TokenExtractor) => boolean): number {
     const initialLength = this.extractors.length
-    this.extractors = this.extractors.filter(extractor => !predicate(extractor))
+    this.extractors = this.extractors.filter((extractor) => !predicate(extractor))
     return initialLength - this.extractors.length
   }
 
@@ -155,7 +155,7 @@ export abstract class Tokenizer {
    */
   modifyExtractorPatterns(
     modifier: (regex: string, extractor: TokenExtractor) => string,
-    filter?: (extractor: TokenExtractor) => boolean
+    filter?: (extractor: TokenExtractor) => boolean,
   ): void {
     for (const extractor of this.extractors) {
       if (!filter || filter(extractor)) {
@@ -164,11 +164,11 @@ export abstract class Tokenizer {
           extractor.regex = newRegex
           // Clear compiled regex so it gets recompiled with new pattern
           if ('_compiledRegex' in extractor) {
-            (extractor as any)._compiledRegex = undefined
+            ;(extractor as any)._compiledRegex = undefined
           }
           // Force recompilation by accessing the getter to clear internal state
           if (extractor instanceof BaseTokenExtractor) {
-            (extractor as any)._compiledRegex = undefined
+            ;(extractor as any)._compiledRegex = undefined
           }
         }
       }
@@ -182,7 +182,7 @@ export abstract class Tokenizer {
    */
   findExtractorsByPattern(pattern: string | RegExp): TokenExtractor[] {
     const searchRegex = typeof pattern === 'string' ? new RegExp(pattern) : pattern
-    return this.extractors.filter(extractor => searchRegex.test(extractor.regex))
+    return this.extractors.filter((extractor) => searchRegex.test(extractor.regex))
   }
 
   /**
@@ -191,8 +191,8 @@ export abstract class Tokenizer {
    * @returns Array of matching extractors
    */
   findExtractorsByString(searchString: string): TokenExtractor[] {
-    return this.extractors.filter(extractor => 
-      extractor.strings?.some(str => str.includes(searchString))
+    return this.extractors.filter((extractor) =>
+      extractor.strings?.some((str) => str.includes(searchString)),
     )
   }
 
@@ -266,7 +266,7 @@ export abstract class Tokenizer {
   static appendText(tokens: Tokens, text: string): void {
     // Split text into words, treating whitespace as a word
     if (text === '') return
-    
+
     const parts = text.split(' ')
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i]

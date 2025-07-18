@@ -108,3 +108,39 @@ bun run publish
 - Use `bun run version` for version bumps
 - Automated deployment to npm registry
 - Git tags for releases (vX.Y.Z format)
+
+## AI Code Agent Rules
+
+**CRITICAL**: Follow these rules when working with this codebase:
+
+1. **Bug Fixes**: When you fix a bug, ALWAYS run tests to prevent regression
+   ```bash
+   bun test
+   ```
+
+2. **Feature Development**: When you add a new feature, write tests AND run them
+   ```bash
+   # Write tests first, then run
+   bun test
+   ```
+
+3. **Use Bun Everywhere**: Use `bun` for all operations where possible
+   - Package management: `bun install`, `bun add`, `bun remove`
+   - Script execution: `bun run <script>`
+   - Testing: `bun test`
+   - Build: `bun run build`
+
+4. **Test-Driven Development**: 
+   - Run tests before making changes to establish baseline
+   - Run tests after each fix/feature to verify correctness
+   - Never skip tests - they are mandatory for code quality
+
+5. **Quality Assurance**:
+   - Always run linting: `bun run lint`
+   - Always run type checking: `bun run typecheck`
+   - Fix all type errors before committing
+
+6. **CI/CD Integration**:
+   - Ensure all tests pass locally before pushing
+   - Check GitHub Actions status after pushing
+   - Fix any CI failures immediately

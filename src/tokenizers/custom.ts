@@ -1,9 +1,9 @@
-import type { TokenExtractor, Token } from './base'
-import { Tokenizer, BaseTokenExtractor } from './base'
-import { createCitationExtractor } from './extractors'
-import { PAGE_NUMBER_REGEX } from '../regexes'
 import type { Edition } from '../models'
 import { Reporter } from '../models'
+import { PAGE_NUMBER_REGEX } from '../regexes'
+import type { Token, TokenExtractor } from './base'
+import { BaseTokenExtractor, Tokenizer } from './base'
+import { createCitationExtractor } from './extractors'
 
 /**
  * CustomTokenizer extends the base Tokenizer with enhanced extensibility features
@@ -30,20 +30,20 @@ export class CustomTokenizer extends Tokenizer {
       hyphenFormat?: boolean
       caseSensitive?: boolean
       editionStr?: string
-    } = {}
+    } = {},
   ): TokenExtractor {
     const {
       yearPageFormat = false,
       hyphenFormat = false,
       caseSensitive = false,
-      editionStr = reporterPattern
+      editionStr = reporterPattern,
     } = options
 
     // Escape the reporter pattern for regex
     const escapedReporter = reporterPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    
+
     let regex: string
-    
+
     if (yearPageFormat) {
       // Year-page format like "T.C. Memo. 2019-233"
       regex = `(?<reporter>${escapedReporter})\\s+(?<volume>\\d{4})-(?<page>\\d+)`
@@ -64,14 +64,14 @@ export class CustomTokenizer extends Tokenizer {
       undefined,
       undefined,
       false,
-      []
+      [],
     )
 
     const edition: Edition = {
       reporter,
       reporterFound: editionStr,
       start: null,
-      end: null
+      end: null,
     }
 
     // Create the extractor
@@ -81,7 +81,7 @@ export class CustomTokenizer extends Tokenizer {
       [],
       [reporterPattern],
       false,
-      caseSensitive ? 0 : 2 // 2 = case insensitive flag
+      caseSensitive ? 0 : 2, // 2 = case insensitive flag
     )
 
     this.addExtractor(extractor)
@@ -102,17 +102,11 @@ export class CustomTokenizer extends Tokenizer {
     options: {
       flags?: number
       strings?: string[]
-    } = {}
+    } = {},
   ): TokenExtractor {
     const { flags = 0, strings = [] } = options
 
-    const extractor = new BaseTokenExtractor(
-      regex,
-      tokenConstructor,
-      extra,
-      flags,
-      strings
-    )
+    const extractor = new BaseTokenExtractor(regex, tokenConstructor, extra, flags, strings)
 
     this.addExtractor(extractor)
     return extractor
@@ -126,13 +120,13 @@ export class CustomTokenizer extends Tokenizer {
   modifyReporterPunctuation(originalChar: string, replacement: string): void {
     // Find the escaped version of the character in the regex
     const escapedChar = originalChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    
+
     this.modifyExtractorPatterns(
       (regex) => {
         // Replace the escaped version with the replacement
         return regex.replace(new RegExp(escapedChar.replace(/\\/g, '\\\\'), 'g'), replacement)
       },
-      (extractor) => extractor.strings?.some(str => str.includes(originalChar)) || false
+      (extractor) => extractor.strings?.some((str) => str.includes(originalChar)) || false,
     )
   }
 
@@ -146,10 +140,10 @@ export class CustomTokenizer extends Tokenizer {
       name?: string
       citeType?: string
       options?: Parameters<CustomTokenizer['addSimpleCitationPattern']>[3]
-    }>
+    }>,
   ): TokenExtractor[] {
     return reporters.map(({ pattern, name, citeType, options }) =>
-      this.addSimpleCitationPattern(pattern, citeType, name, options)
+      this.addSimpleCitationPattern(pattern, citeType, name, options),
     )
   }
 
@@ -157,12 +151,15 @@ export class CustomTokenizer extends Tokenizer {
    * Clone this tokenizer with all its extractors
    */
   clone(): CustomTokenizer {
-    const clonedExtractors = this.extractors.map(extractor => ({
-      ...extractor,
-      // Ensure compiled regex is not shared
-      compiledRegex: undefined
-    } as TokenExtractor))
-    
+    const clonedExtractors = this.extractors.map(
+      (extractor) =>
+        ({
+          ...extractor,
+          // Ensure compiled regex is not shared
+          compiledRegex: undefined,
+        }) as TokenExtractor,
+    )
+
     return new CustomTokenizer(clonedExtractors)
   }
 
@@ -189,7 +186,7 @@ export class CustomTokenizer extends Tokenizer {
       total: this.extractors.length,
       withStrings: 0,
       withoutStrings: 0,
-      byTokenType: {} as Record<string, number>
+      byTokenType: {} as Record<string, number>,
     }
 
     for (const extractor of this.extractors) {
@@ -216,10 +213,7 @@ export class RegexPatternBuilder {
    * @param base Base pattern
    * @param charMap Map of characters to their alternatives
    */
-  static withAlternativePunctuation(
-    base: string,
-    charMap: Record<string, string>
-  ): string {
+  static withAlternativePunctuation(base: string, charMap: Record<string, string>): string {
     let result = base
     for (const [original, replacement] of Object.entries(charMap)) {
       const escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -272,15 +266,15 @@ export class RegexPatternBuilder {
    */
   static pagePattern(allowRanges: boolean = true, allowRoman: boolean = true): string {
     let pattern = '\\d+'
-    
+
     if (allowRoman) {
       pattern = `(?:${pattern}|[ivxlcdm]+)`
     }
-    
+
     if (allowRanges) {
       pattern = `${pattern}(?:-${pattern})?`
     }
-    
+
     return pattern
   }
 }

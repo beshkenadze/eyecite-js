@@ -146,7 +146,7 @@ export function isBalancedHtml(text: string): boolean {
 
   while ((match = tagRegex.exec(text)) !== null) {
     const [fullMatch, tagName] = match
-    
+
     if (fullMatch.startsWith('</')) {
       // Closing tag
       if (tagStack.length === 0 || tagStack[tagStack.length - 1] !== tagName.toLowerCase()) {
@@ -175,12 +175,12 @@ export function wrapHtmlTags(text: string, before: string, after: string): strin
 export function hashSha256(dictionary: Record<string, any>): bigint {
   // Convert to JSON string
   const jsonStr = JSON.stringify(dictionary, Object.keys(dictionary).sort())
-  
+
   // Convert to bytes and calculate hash
   const hash = crypto.createHash('sha256')
   hash.update(jsonStr)
   const hashBytes = hash.digest()
-  
+
   // Convert to bigint
   return BigInt(`0x${hashBytes.toString('hex')}`)
 }
@@ -210,7 +210,7 @@ export function maybeBalanceStyleTags(
 ): [number, number, string] {
   let spanText = plainText.slice(start, end)
   const styleTags = ['i', 'em', 'b']
-  
+
   let newStart = start
   let newEnd = end
 
@@ -219,32 +219,29 @@ export function maybeBalanceStyleTags(
     const closingTag = `</${tag}>`
     const hasOpening = spanText.includes(openingTag)
     const hasClosing = spanText.includes(closingTag)
-    
+
     if (hasOpening && !hasClosing) {
       // Look for closing tag after the end
-      const extendedEnd = Math.min(
-        end + closingTag.length + tolerance,
-        plainText.length,
-      )
+      const extendedEnd = Math.min(end + closingTag.length + tolerance, plainText.length)
       const searchText = plainText.slice(start, extendedEnd)
       const closeIndex = searchText.indexOf(closingTag)
-      
+
       if (closeIndex !== -1 && closeIndex >= spanText.length) {
         newEnd = start + closeIndex + closingTag.length
       }
     }
-    
+
     if (!hasOpening && hasClosing) {
       // Look for opening tag before the start
       const extendedStart = Math.max(start - openingTag.length - tolerance, 0)
       const searchText = plainText.slice(extendedStart, end)
       const openIndex = searchText.lastIndexOf(openingTag)
-      
+
       if (openIndex !== -1) {
         newStart = extendedStart + openIndex
       }
     }
-    
+
     spanText = plainText.slice(newStart, newEnd)
   }
 
@@ -256,7 +253,7 @@ export function maybeBalanceStyleTags(
  */
 export function placeholderMarkup(html: string): string {
   const tagRe = /<(\/?[a-z])[^>]*>/gi
-  
+
   function replace(match: string): string {
     if (match.startsWith('</')) {
       return `</${'X'.repeat(match.length - 3)}>`
@@ -264,43 +261,40 @@ export function placeholderMarkup(html: string): string {
       return `<${'X'.repeat(match.length - 2)}>`
     }
   }
-  
+
   return html.replace(tagRe, replace)
 }
 
 /**
  * Dump citations for debugging
  */
-export function dumpCitations(
-  citations: any[],
-  text: string,
-  contextChars = 30,
-): string {
+export function dumpCitations(citations: any[], text: string, contextChars = 30): string {
   const out: string[] = []
   const greenFmt = '\x1b[32m'
   const blueFmt = '\x1b[94m'
   const boldFmt = '\x1b[1m'
   const endFmt = '\x1b[0m'
-  
+
   for (const citation of citations) {
     const [start, end] = citation.span()
     const contextBefore = text
       .slice(Math.max(0, start - contextChars), start)
       .split('\n')
-      .pop()?.trimStart()
+      .pop()
+      ?.trimStart()
     const matchedText = text.slice(start, end)
     const contextAfter = text
       .slice(end, end + contextChars)
       .split('\n')[0]
       .trimEnd()
-    
+
     out.push(
       `${greenFmt}${citation.constructor.name}:${endFmt} ` +
-      `${contextBefore}` +
-      `${blueFmt}${boldFmt}${matchedText}${endFmt}` +
-      `${contextAfter}`
+        `${contextBefore}` +
+        `${blueFmt}${boldFmt}${matchedText}${endFmt}` +
+        `${contextAfter}`,
     )
-    
+
     for (const [key, value] of Object.entries(citation.dump())) {
       if (value) {
         if (typeof value === 'object' && !Array.isArray(value)) {
@@ -314,6 +308,6 @@ export function dumpCitations(
       }
     }
   }
-  
+
   return out.join('\n')
 }

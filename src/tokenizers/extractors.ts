@@ -1,24 +1,24 @@
 import {
   CitationToken,
+  type Edition,
   IdToken,
+  JournalCitationToken,
+  LawCitationToken,
   ParagraphToken,
   PlaceholderCitationToken,
   SectionToken,
   StopWordToken,
   SupraToken,
-  LawCitationToken,
-  JournalCitationToken,
-  type Edition,
 } from '../models'
 import {
   ID_REGEX,
+  nonalphanumBoundariesRe,
   PARAGRAPH_REGEX,
   PLACEHOLDER_CITATIONS,
   SECTION_REGEX,
   STOP_WORD_REGEX,
   STOP_WORDS,
   SUPRA_REGEX,
-  nonalphanumBoundariesRe,
 } from '../regexes'
 import { BaseTokenExtractor } from './base'
 

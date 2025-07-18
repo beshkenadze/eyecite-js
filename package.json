@@ -79,5 +79,12 @@
   },
   "engines": {
     "bun": ">=1.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beshkenadze/eyecite-js.git"
   }
 }

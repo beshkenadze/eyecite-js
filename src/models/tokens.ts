@@ -14,16 +14,20 @@ export class CitationToken extends Token {
     extra: Record<string, unknown> = {},
   ) {
     super(data, start, end, groups)
-    this.exactEditions = extra.exactEditions || []
-    this.variationEditions = extra.variationEditions || []
-    this.short = extra.short || false
+    this.exactEditions = (extra.exactEditions as Edition[]) || []
+    this.variationEditions = (extra.variationEditions as Edition[]) || []
+    this.short = (extra.short as boolean) || false
   }
 
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): CitationToken {
+  static fromMatch(
+    match: RegExpExecArray,
+    extra: Record<string, unknown>,
+    offset = 0,
+  ): CitationToken {
     // Get the captured group (1) or fall back to full match (0)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the captured group
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -33,12 +37,12 @@ export class CitationToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
+
     return new CitationToken(matchText, start, end, groups, extra)
   }
 
@@ -59,11 +63,15 @@ export class CitationToken extends Token {
 }
 
 export class SectionToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): SectionToken {
+  static fromMatch(
+    match: RegExpExecArray,
+    _extra: Record<string, unknown>,
+    offset = 0,
+  ): SectionToken {
     // Get the captured section (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -73,22 +81,26 @@ export class SectionToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
-    return new SectionToken(matchText, start, end, groups, extra)
+
+    return new SectionToken(matchText, start, end, groups)
   }
 }
 
 export class SupraToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): SupraToken {
+  static fromMatch(
+    match: RegExpExecArray,
+    _extra: Record<string, unknown>,
+    offset = 0,
+  ): SupraToken {
     // Get the captured supra (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -98,22 +110,22 @@ export class SupraToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
-    return new SupraToken(matchText, start, end, groups, extra)
+
+    return new SupraToken(matchText, start, end, groups)
   }
 }
 
 export class IdToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): IdToken {
+  static fromMatch(match: RegExpExecArray, _extra: Record<string, unknown>, offset = 0): IdToken {
     // Get the captured id (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -123,22 +135,26 @@ export class IdToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
-    return new IdToken(matchText, start, end, groups, extra)
+
+    return new IdToken(matchText, start, end, groups)
   }
 }
 
 export class ParagraphToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): ParagraphToken {
+  static fromMatch(
+    match: RegExpExecArray,
+    _extra: Record<string, unknown>,
+    offset = 0,
+  ): ParagraphToken {
     // Get the captured paragraph (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -148,22 +164,22 @@ export class ParagraphToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
-    return new ParagraphToken(matchText, start, end, groups, extra)
+
+    return new ParagraphToken(matchText, start, end, groups)
   }
 }
 
 export class StopWordToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
+  static fromMatch(match: RegExpExecArray, _extra: Record<string, unknown>, offset = 0): Token {
     // Get the captured stop word (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -173,23 +189,27 @@ export class StopWordToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Set the stop_word in groups
     const groups = match.groups || {}
     groups.stop_word = matchText.toLowerCase()
-    
-    return new StopWordToken(matchText, start, end, groups, extra)
+
+    return new StopWordToken(matchText, start, end, groups)
   }
 }
 
 export class PlaceholderCitationToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): PlaceholderCitationToken {
+  static fromMatch(
+    match: RegExpExecArray,
+    _extra: Record<string, unknown>,
+    offset = 0,
+  ): PlaceholderCitationToken {
     // Get the captured placeholder citation (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -199,22 +219,26 @@ export class PlaceholderCitationToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
-    return new PlaceholderCitationToken(matchText, start, end, groups, extra)
+
+    return new PlaceholderCitationToken(matchText, start, end, groups)
   }
 }
 
 export class CaseReferenceToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): CaseReferenceToken {
+  static fromMatch(
+    match: RegExpExecArray,
+    _extra: Record<string, unknown>,
+    offset = 0,
+  ): CaseReferenceToken {
     // Get the captured case reference (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
-    
+
     // Calculate start position based on the full match
     let start = (match.index || 0) + offset
     if (captureIndex > 0 && match[0]) {
@@ -224,13 +248,13 @@ export class CaseReferenceToken extends Token {
         start += captureOffset
       }
     }
-    
+
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
-    return new CaseReferenceToken(matchText, start, end, groups, extra)
+
+    return new CaseReferenceToken(matchText, start, end, groups)
   }
 }
 
@@ -246,8 +270,8 @@ export class LawCitationToken extends Token {
     extra: Record<string, unknown> = {},
   ) {
     super(data, start, end, groups)
-    this.reporter = extra.reporter || ''
-    this.lawType = extra.lawType || 'leg_statute'
+    this.reporter = (extra.reporter as string) || ''
+    this.lawType = (extra.lawType as string) || 'leg_statute'
   }
 
   static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
@@ -255,10 +279,10 @@ export class LawCitationToken extends Token {
     const matchText = match[0]
     const start = (match.index || 0) + offset
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
+
     return new LawCitationToken(matchText, start, end, groups, extra)
   }
 }
@@ -275,8 +299,8 @@ export class JournalCitationToken extends Token {
     extra: Record<string, unknown> = {},
   ) {
     super(data, start, end, groups)
-    this.journal = extra.journal || ''
-    this.journalName = extra.journalName || ''
+    this.journal = (extra.journal as string) || ''
+    this.journalName = (extra.journalName as string) || ''
   }
 
   static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
@@ -284,11 +308,10 @@ export class JournalCitationToken extends Token {
     const matchText = match[0]
     const start = (match.index || 0) + offset
     const end = start + matchText.length
-    
+
     // Extract named groups
     const groups = match.groups || {}
-    
+
     return new JournalCitationToken(matchText, start, end, groups, extra)
   }
 }
-
