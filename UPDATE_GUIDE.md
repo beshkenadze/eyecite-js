@@ -6,7 +6,7 @@ This guide provides step-by-step instructions for updating the TypeScript port w
 
 1. Have both repositories cloned:
    - Python: https://github.com/freelawproject/eyecite
-   - TypeScript: Your eyecite-ts repository
+   - TypeScript: Your eyecite-js repository
 
 2. Tools needed:
    - Git for tracking changes

@@ -1,4 +1,4 @@
-# Annotation System for eyecite-ts
+# Annotation System for eyecite-js
 
 ## Overview
 
@@ -13,7 +13,7 @@ The annotation system allows you to insert HTML markup around legal citations fo
 By default, citations are wrapped in `<span class="citation">` tags:
 
 ```typescript
-import { annotateCitations } from 'eyecite-ts'
+import { annotateCitations } from '@beshkenadze/eyecite-js'
 
 const text = 'See Lissner v. Test, 1 U.S. 1 (1982).'
 const annotated = annotateCitations(text)
@@ -53,7 +53,7 @@ const annotated = annotateCitations(text, {
 Works seamlessly with the text cleaning functionality:
 
 ```typescript
-import { cleanText, getCitations, annotateCitations } from 'eyecite-ts'
+import { cleanText, getCitations, annotateCitations } from '@beshkenadze/eyecite-js'
 
 const messyText = 'See   1    U.S.    1'
 const cleanedText = cleanText(messyText, ['all_whitespace'])

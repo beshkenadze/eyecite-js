@@ -63,6 +63,6 @@ All Tax Court reporters are already present in `src/data/reporters.json`:
 ## Test Location
 
 The Tax Court citation tests are located in:
-`/Users/akira/Projects/eyecite/eyecite-ts/tests/find.test.ts`
+`/Users/akira/Projects/eyecite/eyecite-js/tests/find.test.ts`
 
 Look for the `describe('Tax Court Citations', ...)` block starting around line 1420.
