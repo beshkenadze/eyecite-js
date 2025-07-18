@@ -14,14 +14,14 @@ This document summarizes the current status of markup/HTML support for reference
 - **Basic HTML parsing**: Uses `htmlparser2` for HTML structure analysis
 
 ### ✅ Test Infrastructure
-- **Ported test cases**: Two comprehensive test cases added to `/Users/akira/Projects/eyecite/eyecite-ts/tests/find.test.ts`:
+- **Ported test cases**: Two comprehensive test cases added to `/Users/akira/Projects/eyecite/eyecite-js/tests/find.test.ts`:
   1. `should extract references from markup text` - Tests basic markup-based reference extraction
   2. `should filter out ReferenceCitation that overlap other citations` - Tests overlap filtering with HTML markup
 
 ## What Is Missing
 
 ### ❌ Markup-Based Reference Extraction
-The key missing piece is the `findReferenceCitationsFromMarkup` function. Currently in `/Users/akira/Projects/eyecite/eyecite-ts/src/find.ts`, there's a TODO comment:
+The key missing piece is the `findReferenceCitationsFromMarkup` function. Currently in `/Users/akira/Projects/eyecite/eyecite-js/src/find.ts`, there's a TODO comment:
 
 ```typescript
 if (document.markupText) {
@@ -75,7 +75,7 @@ references = [c for c in citations if isinstance(c, ReferenceCitation)]
 
 To complete markup support for reference citations:
 
-1. **Implement `findReferenceCitationsFromMarkup`** in `/Users/akira/Projects/eyecite/eyecite-ts/src/find.ts`
+1. **Implement `findReferenceCitationsFromMarkup`** in `/Users/akira/Projects/eyecite/eyecite-js/src/find.ts`
 2. **Add HTML emphasis tag extraction** to the document processing pipeline
 3. **Update the TODO** in `extractReferenceCitations` function
 4. **Enable the skipped tests** and verify they pass
@@ -93,4 +93,4 @@ Until markup-based reference extraction is implemented, users should:
 
 ## Files Modified
 
-- `/Users/akira/Projects/eyecite/eyecite-ts/tests/find.test.ts`: Added two comprehensive test cases for markup-based reference extraction (currently skipped)
+- `/Users/akira/Projects/eyecite/eyecite-js/tests/find.test.ts`: Added two comprehensive test cases for markup-based reference extraction (currently skipped)

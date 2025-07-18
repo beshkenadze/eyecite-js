@@ -16,8 +16,52 @@ eyecite-js is a complete port that recognizes the same wide variety of citations
 
 ## Installation
 
+### Package Managers
+
+**Bun** (recommended):
+```bash
+bun add @beshkenadze/eyecite-js
+```
+
+**npm**:
 ```bash
 npm install @beshkenadze/eyecite-js
+```
+
+**pnpm**:
+```bash
+pnpm add @beshkenadze/eyecite-js
+```
+
+**Yarn**:
+```bash
+yarn add @beshkenadze/eyecite-js
+```
+
+### Registries
+
+**npm Registry** (default):
+```bash
+# Latest stable version
+npm install @beshkenadze/eyecite-js
+
+# Alpha version
+npm install @beshkenadze/eyecite-js@alpha
+
+# Beta version  
+npm install @beshkenadze/eyecite-js@beta
+```
+
+**GitHub Packages**:
+```bash
+# Configure registry (one-time setup)
+npm config set @beshkenadze:registry https://npm.pkg.github.com
+
+# Install from GitHub Packages
+npm install @beshkenadze/eyecite-js
+
+# Or install directly
+npm install @beshkenadze/eyecite-js --registry=https://npm.pkg.github.com
 ```
 
 ## Quick Start

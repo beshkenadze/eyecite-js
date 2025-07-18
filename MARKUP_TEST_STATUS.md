@@ -7,7 +7,7 @@ This document describes the status of the `test_markup_plaintiff_and_antecedent_
 ## What Was Implemented
 
 ### ✅ Test Structure Created
-- **Complete test port**: All original Python test cases were ported to TypeScript in `/Users/akira/Projects/eyecite/eyecite-ts/tests/find.test.ts`
+- **Complete test port**: All original Python test cases were ported to TypeScript in `/Users/akira/Projects/eyecite/eyecite-js/tests/find.test.ts`
 - **Test organization**: Tests organized under "Markup Plaintiff and Antecedent Guesses" describe block
 - **Comprehensive coverage**: Includes all 25 test cases from the original Python test
 
@@ -79,7 +79,7 @@ function extractFromSeparateHtmlElements(citation: CaseCitation, document: Docum
 ## Current Status
 
 - **Total test cases**: 29 (25 skipped + 4 passing)
-- **Test file**: `/Users/akira/Projects/eyecite/eyecite-ts/tests/find.test.ts` (lines 2985-3508)
+- **Test file**: `/Users/akira/Projects/eyecite/eyecite-js/tests/find.test.ts` (lines 2985-3508)
 - **Implementation status**: Foundational work complete, HTML parsing needed
 - **Python reference**: `/Users/akira/Projects/eyecite/tests/test_FindTest.py` (lines 1296-1745)
 
@@ -94,8 +94,8 @@ function extractFromSeparateHtmlElements(citation: CaseCitation, document: Docum
 
 ## Files Modified
 
-- `/Users/akira/Projects/eyecite/eyecite-ts/tests/find.test.ts`: Added comprehensive test suite for markup-based case name extraction
-- `/Users/akira/Projects/eyecite/eyecite-ts/MARKUP_TEST_STATUS.md`: This documentation file
+- `/Users/akira/Projects/eyecite/eyecite-js/tests/find.test.ts`: Added comprehensive test suite for markup-based case name extraction
+- `/Users/akira/Projects/eyecite/eyecite-js/MARKUP_TEST_STATUS.md`: This documentation file
 
 ## Test Execution
 

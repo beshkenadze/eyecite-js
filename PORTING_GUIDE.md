@@ -258,7 +258,7 @@ Python: `id(self)` → TypeScript: `` `unique-${Date.now()}-${Math.random()}` ``
 ## File Structure
 
 ```
-eyecite-ts/
+eyecite-js/
 ├── src/
 │   ├── models/
 │   │   ├── base.ts       # Base classes and interfaces
