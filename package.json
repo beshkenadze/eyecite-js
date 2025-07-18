@@ -1,6 +1,6 @@
 {
   "name": "@beshkenadze/eyecite-js",
-  "version": "2.7.6-alpha.4",
+  "version": "2.7.6-alpha.5",
   "description": "TypeScript library for extracting legal citations from text strings. A complete port of the Python eyecite library.",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -61,8 +61,7 @@
     "url": "https://github.com/beshkenadze/eyecite-js/issues"
   },
   "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "css-select": "^6.0.0",
@@ -79,12 +78,5 @@
   },
   "engines": {
     "bun": ">=1.0.0"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/beshkenadze/eyecite-js.git"
   }
 }
