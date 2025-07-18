@@ -1,6 +1,6 @@
 {
   "name": "@beshkenadze/eyecite-js",
-  "version": "2.7.6-alpha.3",
+  "version": "2.7.6-alpha.4",
   "description": "TypeScript library for extracting legal citations from text strings. A complete port of the Python eyecite library.",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -33,7 +33,7 @@
     "dev": "bun run src/index.ts",
     "clean": "rm -rf dist",
     "prepublishOnly": "bun run build",
-    "version": "bun run build && git add dist/",
+    "version": "bun run build",
     "postversion": "git push && git push --tags"
   },
   "keywords": [
