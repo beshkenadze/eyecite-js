@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 
 export const REPORTERS_THAT_NEED_PAGE_CORRECTION = new Set(['NY Slip Op', 'Misc. 3d'])
 
@@ -110,17 +110,17 @@ export function stripPunct(text: string): string {
   // Starting quotes
   text = text.replace(/^["']/, '')
   text = text.replace(/``/g, '')
-  text = text.replace(/([ \(\[{<])"/g, '$1')
+  text = text.replace(/([ ([{<])"/g, '$1')
 
   // Punctuation
   text = text.replace(/\.\.\./g, '')
   text = text.replace(/[,;:@#$%&]/g, '')
-  text = text.replace(/([^.])(\.)([\]\)}>"']*)\s*$/g, '$1')
+  text = text.replace(/([^.])(\.)([\])}>"']*)\s*$/g, '$1')
   text = text.replace(/[?!]/g, '')
   text = text.replace(/([^'])' /g, '$1')
 
   // Parens, brackets, etc.
-  text = text.replace(/[\]\[\(\)\{\}<>]/g, '')
+  text = text.replace(/[\][(){}<>]/g, '')
   text = text.replace(/--/g, '')
 
   // Ending quotes
@@ -182,7 +182,7 @@ export function hashSha256(dictionary: Record<string, any>): bigint {
   const hashBytes = hash.digest()
   
   // Convert to bigint
-  return BigInt('0x' + hashBytes.toString('hex'))
+  return BigInt(`0x${hashBytes.toString('hex')}`)
 }
 
 /**
@@ -259,9 +259,9 @@ export function placeholderMarkup(html: string): string {
   
   function replace(match: string): string {
     if (match.startsWith('</')) {
-      return '</' + 'X'.repeat(match.length - 3) + '>'
+      return `</${'X'.repeat(match.length - 3)}>`
     } else {
-      return '<' + 'X'.repeat(match.length - 2) + '>'
+      return `<${'X'.repeat(match.length - 2)}>`
     }
   }
   
@@ -287,8 +287,7 @@ export function dumpCitations(
     const contextBefore = text
       .slice(Math.max(0, start - contextChars), start)
       .split('\n')
-      .pop()!
-      .trimStart()
+      .pop()?.trimStart()
     const matchedText = text.slice(start, end)
     const contextAfter = text
       .slice(end, end + contextChars)

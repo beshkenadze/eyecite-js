@@ -4,7 +4,6 @@ import { CustomTokenizer, RegexPatternBuilder } from '../src/tokenizers/custom'
 import { AhocorasickTokenizer } from '../src/tokenizers/default'
 import { createSpecialExtractors, createCitationExtractor } from '../src/tokenizers/extractors'
 import { getCitations } from '../src/find'
-import { PAGE_NUMBER_REGEX } from '../src/regexes'
 import { FullCaseCitation, Reporter, type Edition, CitationToken } from '../src/models'
 
 describe('Tokenizer Extensibility', () => {
@@ -327,7 +326,7 @@ describe('Tokenizer Extensibility', () => {
       expect(stats.byTokenType).toHaveProperty('CitationToken')
       
       // Check that we have the correct token types
-      expect(stats.byTokenType['CitationToken']).toBeGreaterThanOrEqual(1)
+      expect(stats.byTokenType.CitationToken).toBeGreaterThanOrEqual(1)
     })
   })
 
@@ -450,7 +449,7 @@ describe('Tokenizer Extensibility', () => {
       tokenizer.addExtractor(testExtractor)
       
       // Should find standard format
-      let extractorsForTest = tokenizer.getExtractors('TEST 123')
+      const extractorsForTest = tokenizer.getExtractors('TEST 123')
       expect(extractorsForTest).toContain(testExtractor)
       
       // Should not find modified format initially

@@ -25,7 +25,7 @@ function buildCitationExtractors(): TokenExtractor[] {
   const extractors: TokenExtractor[] = []
   
   // For each reporter in the database
-  for (const [reporterStr, reporterList] of Object.entries(REPORTERS)) {
+  for (const [_reporterStr, reporterList] of Object.entries(REPORTERS)) {
     for (const reporterData of reporterList) {
       // Create editions for this reporter
       const allEditions: Edition[] = []
@@ -56,7 +56,7 @@ function buildCitationExtractors(): TokenExtractor[] {
         let fullRegex: string
         let shortRegex: string
         
-        if (editionData.regexes && editionData.regexes.includes('$full_cite_year_page')) {
+        if (editionData.regexes?.includes('$full_cite_year_page')) {
           // Special handling for year-page format (e.g., T.C. Memo. 2019-233)
           fullRegex = `(?<reporter>${escapedEdition})\\s+(?<volume>\\d{4})-(?<page>\\d+)`
           shortRegex = shortCiteRe(fullRegex)
@@ -117,8 +117,7 @@ function buildCitationExtractors(): TokenExtractor[] {
           let shortVarRegex: string
           
           const canonicalEditionData = reporterData.editions[canonical]
-          if (canonicalEditionData && canonicalEditionData.regexes && 
-              canonicalEditionData.regexes.includes('$full_cite_year_page')) {
+          if (canonicalEditionData?.regexes?.includes('$full_cite_year_page')) {
             // Special handling for year-page format variations
             varRegex = `(?<reporter>${escapedVariation})\\s+(?<volume>\\d{4})-(?<page>\\d+)`
             shortVarRegex = shortCiteRe(varRegex)
@@ -311,7 +310,7 @@ export class AhocorasickTokenizer extends Tokenizer {
           if (!targetMap.has(key)) {
             targetMap.set(key, [])
           }
-          targetMap.get(key)!.push(extractor)
+          targetMap.get(key)?.push(extractor)
         }
       }
     }

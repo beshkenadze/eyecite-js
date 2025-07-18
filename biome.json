@@ -22,7 +22,8 @@
       "complexity": {
         "noBannedTypes": "error",
         "noExtraBooleanCast": "error",
-        "noUselessCatch": "error"
+        "noUselessCatch": "error",
+        "noStaticOnlyClass": "warn"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -33,11 +34,16 @@
         "noInvalidConstructorSuper": "error",
         "noUndeclaredVariables": "error",
         "noUnreachable": "error",
-        "noUnreachableSuper": "error"
+        "noUnreachableSuper": "error",
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn"
       },
       "style": {
         "useConst": "error",
-        "useTemplate": "error"
+        "useTemplate": "error",
+        "useNodejsImportProtocol": "warn",
+        "noNonNullAssertion": "warn"
       },
       "suspicious": {
         "noDuplicateCase": "error",
@@ -48,10 +54,26 @@
         "noImportAssign": "error",
         "noRedeclare": "error",
         "noUnsafeNegation": "error",
-        "useGetterReturn": "error"
+        "useGetterReturn": "error",
+        "noExplicitAny": "warn"
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["tests/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
@@ -65,7 +87,6 @@
     }
   },
   "assist": {
-    "enabled": true,
     "actions": {
       "source": {
         "organizeImports": "on"

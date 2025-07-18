@@ -38,7 +38,7 @@ export abstract class CitationBase {
 
     // Set known missing page numbers to null
     if (this.groups.page && /^_+$/.test(this.groups.page)) {
-      this.groups.page = null as any
+      this.groups.page = undefined
     }
   }
 
@@ -60,7 +60,7 @@ export abstract class CitationBase {
     return this.matchedText()
   }
 
-  dump(): Record<string, any> {
+  dump(): Record<string, unknown> {
     return {
       groups: this.groups,
       metadata: Object.fromEntries(
@@ -159,7 +159,7 @@ export abstract class Token {
     return null
   }
 
-  static fromMatch(match: RegExpExecArray, extra: Record<string, any>, offset = 0): Token {
+  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
     // Get the captured group (1) or fall back to full match (0)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
@@ -184,7 +184,7 @@ export abstract class Token {
 
     // This will be overridden by subclasses
     // @ts-ignore - We know this is called on subclasses
-    return new this(matchText, start, end, groups, extra)
+    return new Token(matchText, start, end, groups, extra)
   }
 }
 
@@ -199,15 +199,15 @@ export interface Document {
   cleanSteps?: Array<string | ((text: string) => string)>
   emphasisTags: Array<[string, number, number]>
   sourceText: string
-  plainToMarkup?: any
-  markupToPlain?: any
+  plainToMarkup?: unknown
+  markupToPlain?: unknown
 }
 
 // Resource represents something that a citation references
 export class Resource {
-  citation: any
+  citation: unknown
 
-  constructor(citation: any) {
+  constructor(citation: unknown) {
     this.citation = citation
   }
 
@@ -218,4 +218,4 @@ export class Resource {
 }
 
 // ResourceType can be any object that represents a resource
-export type ResourceType = any
+export type ResourceType = unknown

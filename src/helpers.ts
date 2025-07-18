@@ -8,19 +8,17 @@ import type {
 import {
   CitationToken,
   FullCaseCitation,
-  FullJournalCitation,
-  FullLawCitation,
+  type FullJournalCitation,
+  type FullLawCitation,
   ParagraphToken,
   PlaceholderCitationToken,
-  ReferenceCitation,
   ResourceCitation,
-  ShortCaseCitation,
   StopWordToken,
   SupraCitation,
 } from './models'
 import { COURTS } from './data'
-import { bisectLeft, bisectRight } from './span-updater'
-import { type Edition, includesYear, parseYearRange } from './models/reporters'
+import { bisectRight } from './span-updater'
+import { parseYearRange } from './models/reporters'
 import {
   MONTH_REGEX_INNER,
   POST_FULL_CITATION_REGEX,
@@ -144,7 +142,7 @@ export function matchOnTokens(
   
   try {
     match = text.match(new RegExp(cleanedRegex))
-  } catch (e) {
+  } catch (_e) {
     // If the regex is invalid, skip it
     return null
   }
@@ -177,7 +175,7 @@ const CITATION_TYPE_PRIORITIES = new Map([
  * Cache for expensive filtering operations
  */
 const filteringCache = new Map<string, CitationBase[]>()
-const MAX_CACHE_SIZE = 100
+const _MAX_CACHE_SIZE = 100
 
 /**
  * Clear the filtering cache
@@ -267,7 +265,7 @@ function areParallelCitations(citation1: CitationBase, citation2: CitationBase):
     // Enhanced gap detection - consider punctuation and formatting
     if (gap < 20 && citation1.groups.reporter !== citation2.groups.reporter) {
       // Check if there's only punctuation/whitespace between citations
-      if (citation1.document && citation1.document.plainText) {
+      if (citation1.document?.plainText) {
         const betweenText = citation1.document.plainText.substring(citation1End, citation2Start)
         // Allow comma, space, and common parallel citation separators
         if (/^[\s,;]*$/.test(betweenText)) {
@@ -278,7 +276,7 @@ function areParallelCitations(citation1: CitationBase, citation2: CitationBase):
     }
     
     // Check for specific parallel citation patterns in the text
-    if (citation1.document && citation1.document.plainText) {
+    if (citation1.document?.plainText) {
       const fullText = citation1.document.plainText
       const start = Math.min(span1.start, span2.start)
       const end = Math.max(span1.end, span2.end)
@@ -527,7 +525,7 @@ export function convertHtmlToPlainTextAndLoc(
   document: Document,
   results: Array<[string, number, number]>
 ): [string, number, number] {
-  const [tagText, tagStart, tagEnd] = results[0]
+  const [tagText, _tagStart, _tagEnd] = results[0]
   
   if (!document.markupToPlain) {
     return ['', 0, 0]
@@ -571,7 +569,7 @@ export function findCaseNameInHtml(
     // Look for emphasis tags that appear before the citation
     for (let i = 0; i < document.emphasisTags.length; i++) {
       const tag = document.emphasisTags[i]
-      const [text, markupStart, markupEnd] = tag
+      const [text, _markupStart, _markupEnd] = tag
       
       // Find where this text appears in the plain text
       // Since emphasis tags can appear multiple times, we need to find the right occurrence
@@ -638,13 +636,13 @@ export function findCaseNameInHtml(
         // Check if this could be part of a multi-tag case name
         // Look for consecutive emphasis tags that together form a case name
         const consecutiveTags: Array<[string, number, number]> = [tag]
-        let combinedText = text
+        let _combinedText = text
         let hasVersus = /(?:^|\s+)v\.?\s+/i.test(text)
         
         // Look ahead for more consecutive tags
         for (let j = i + 1; j < document.emphasisTags.length; j++) {
           const nextTag = document.emphasisTags[j]
-          const [nextText, nextMarkupStart, nextMarkupEnd] = nextTag
+          const [nextText, _nextMarkupStart, _nextMarkupEnd] = nextTag
           
           // Find where this next tag's text appears in the plain text
           let nextPlainStart = -1
@@ -676,7 +674,7 @@ export function findCaseNameInHtml(
           }
           
           consecutiveTags.push(nextTag)
-          combinedText += ' ' + nextText
+          _combinedText += ` ${nextText}`
           
           // Check if this tag contains 'v'
           if (/(?:^|\s+)v\.?\s+/i.test(nextText)) {
@@ -898,7 +896,7 @@ function processCaseName(
   if (state.vToken && state.vTokenIndex !== undefined) {
     // Extract plaintiff - text before v token
     let plaintiffStart = Math.max(0, state.vTokenIndex - 10) // Look back up to 10 words
-    let plaintiffEnd = state.vTokenIndex
+    const plaintiffEnd = state.vTokenIndex
     
     // Find actual start of plaintiff name (look for clear boundaries)
     for (let i = state.vTokenIndex - 1; i >= plaintiffStart; i--) {
@@ -933,7 +931,7 @@ function processCaseName(
       }
       
       // Found a capitalized word or special character
-      if (wordStr && wordStr[0] && wordStr[0].match(/[A-Z]/)) {
+      if (wordStr?.[0]?.match(/[A-Z]/)) {
         foundCapitalized = true
       }
       
@@ -1212,7 +1210,7 @@ function extractFromSingleHtmlElement(
   document: Document,
   tags: Array<[string, number, number]>
 ): void {
-  const [caseName, start, end] = convertHtmlToPlainTextAndLoc(document, tags)
+  const [caseName, start, _end] = convertHtmlToPlainTextAndLoc(document, tags)
   
   // Split on 'v' or 'vs'
   const pattern = /\s+vs?\.?\s+/i
@@ -1271,7 +1269,7 @@ function extractFromMultipleHtmlElements(
   let combinedText = ''
   let firstPlainStart = -1
   let lastPlainEnd = -1
-  let vBetweenTags = false
+  let _vBetweenTags = false
   
   for (let i = 0; i < tags.length; i++) {
     const [text] = tags[i]
@@ -1291,7 +1289,7 @@ function extractFromMultipleHtmlElements(
       if (lastPlainEnd !== -1 && plainStart > lastPlainEnd) {
         const betweenText = document.plainText.substring(lastPlainEnd, plainStart)
         if (/^\s*v\.?\s*$/i.test(betweenText)) {
-          vBetweenTags = true
+          _vBetweenTags = true
           // Add 'v.' to combined text if it was between tags
           if (combinedText && !combinedText.endsWith(' ')) {
             combinedText += ' '
@@ -1335,10 +1333,10 @@ function extractFromMultipleHtmlElements(
 
 function extractDefendantAfterStopword(
   citation: CaseCitation,
-  document: Document,
+  _document: Document,
   words: Tokens,
   index: number,
-  word: any,
+  _word: any,
 ): void {
   // Find next non-whitespace word after stop word
   let shift = 1
@@ -1730,9 +1728,7 @@ export function getCourtByParen(parenString: string): string | null {
           if (regex.test(parenString)) {
             return court.id
           }
-        } catch (e) {
-          // Skip invalid regex patterns
-          continue
+        } catch (_e) {
         }
       }
     }

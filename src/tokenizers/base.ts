@@ -1,4 +1,4 @@
-import type { Token, TokenOrStr, Tokens } from '../models'
+import type { Token, Tokens } from '../models'
 
 export interface TokenExtractor {
   regex: string
@@ -192,7 +192,7 @@ export abstract class Tokenizer {
    */
   findExtractorsByString(searchString: string): TokenExtractor[] {
     return this.extractors.filter(extractor => 
-      extractor.strings && extractor.strings.some(str => str.includes(searchString))
+      extractor.strings?.some(str => str.includes(searchString))
     )
   }
 
@@ -250,7 +250,7 @@ export abstract class Tokenizer {
     return [allTokens, citationTokens]
   }
 
-  getExtractors(text: string): TokenExtractor[] {
+  getExtractors(_text: string): TokenExtractor[] {
     // Subclasses can override this to filter extractors based on text
     return this.extractors
   }

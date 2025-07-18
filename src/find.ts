@@ -3,7 +3,6 @@ import type {
   CitationBase,
   Document,
   FullCitation,
-  Token,
   Tokens,
 } from './models'
 import {
@@ -17,14 +16,14 @@ import {
   LawCitationToken,
   JournalCitationToken,
   ReferenceCitation,
-  ResourceCitation,
+  type ResourceCitation,
   SectionToken,
   ShortCaseCitation,
   SupraCitation,
   SupraToken,
   UnknownCitation,
 } from './models'
-import { SUPRA_ANTECEDENT_REGEX, referencePinCiteRe } from './regexes'
+import { referencePinCiteRe } from './regexes'
 import type { Tokenizer } from './tokenizers'
 import { defaultTokenizer } from './tokenizers'
 import {
@@ -34,11 +33,10 @@ import {
   findCaseName,
   findCaseNameInHtml,
   isValidName,
-  matchOnTokens,
 } from './helpers'
 import { jokeCite } from './constants'
 import { placeholderMarkup } from './utils'
-import { SpanUpdater, bisectLeft, bisectRight } from './span-updater'
+import { SpanUpdater, } from './span-updater'
 import { cleanText } from './clean'
 import { 
   parseYearRange, 
@@ -209,7 +207,7 @@ function handleParallelCitations(citations: CitationBase[]): void {
       if (!groups.has(start)) {
         groups.set(start, [])
       }
-      groups.get(start)!.push(citation)
+      groups.get(start)?.push(citation)
     }
   }
   
@@ -410,7 +408,7 @@ function extractShortformCitation(
     const rangeMatch = afterText.match(/^-(\d+)/)
     if (rangeMatch) {
       // Update pin cite to include the full range
-      pinCite = pinCite + '-' + rangeMatch[1]
+      pinCite = `${pinCite}-${rangeMatch[1]}`
       spanEnd = citeToken.end + rangeMatch[0].length
       // Update afterText to skip the range part
       afterText = afterText.substring(rangeMatch[0].length)
@@ -514,7 +512,7 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
   
   // Match pin cite patterns
   const pinCiteMatch = afterText.match(/^,?\s*((?:at\s+)?\d+(?:-\d+)?(?:\s*[&,]\s*\d+(?:-\d+)?)*)/)
-  if (pinCiteMatch && pinCiteMatch[1]) {
+  if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
     spanEnd = words[index].end + pinCiteMatch[0].length
     
@@ -620,7 +618,7 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
   
   // Match pin cite patterns - same as supra
   const pinCiteMatch = afterText.match(/^\s*((?:at\s+)?\d+(?:-\d+)?(?:\s*[&,]\s*\d+(?:-\d+)?)*)/)
-  if (pinCiteMatch && pinCiteMatch[1]) {
+  if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
     spanEnd = words[index].end + pinCiteMatch[0].length
     
@@ -1147,7 +1145,7 @@ export function findReferenceCitationsFromMarkup(
   const usedPositions = new Set<number>()
   
   // Process each emphasis tag
-  for (const [tagText, tagStart, tagEnd] of document.emphasisTags) {
+  for (const [tagText, _tagStart, _tagEnd] of document.emphasisTags) {
     // Skip tags that contain full case names (with v. or v)
     if (tagText.includes(' v. ') || tagText.includes(' v ')) continue
     

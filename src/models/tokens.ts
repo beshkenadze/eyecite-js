@@ -11,7 +11,7 @@ export class CitationToken extends Token {
     start: number,
     end: number,
     groups = {},
-    extra: any = {},
+    extra: Record<string, unknown> = {},
   ) {
     super(data, start, end, groups)
     this.exactEditions = extra.exactEditions || []
@@ -44,7 +44,7 @@ export class IdToken extends Token {}
 export class ParagraphToken extends Token {}
 
 export class StopWordToken extends Token {
-  static fromMatch(match: RegExpExecArray, extra: Record<string, any>, offset = 0): Token {
+  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
     // Get the captured stop word (group 1)
     const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
     const matchText = match[captureIndex]
@@ -65,7 +65,7 @@ export class StopWordToken extends Token {
     const groups = match.groups || {}
     groups.stop_word = matchText.toLowerCase()
     
-    return new this(matchText, start, end, groups, extra)
+    return new StopWordToken(matchText, start, end, groups, extra)
   }
 }
 
@@ -82,14 +82,14 @@ export class LawCitationToken extends Token {
     start: number,
     end: number,
     groups = {},
-    extra: any = {},
+    extra: Record<string, unknown> = {},
   ) {
     super(data, start, end, groups)
     this.reporter = extra.reporter || ''
     this.lawType = extra.lawType || 'leg_statute'
   }
 
-  static fromMatch(match: RegExpExecArray, extra: Record<string, any>, offset = 0): Token {
+  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
     // For law citations, always use the full match (match[0])
     const matchText = match[0]
     const start = (match.index || 0) + offset
@@ -98,7 +98,7 @@ export class LawCitationToken extends Token {
     // Extract named groups
     const groups = match.groups || {}
     
-    return new this(matchText, start, end, groups, extra)
+    return new LawCitationToken(matchText, start, end, groups, extra)
   }
 }
 
@@ -111,14 +111,14 @@ export class JournalCitationToken extends Token {
     start: number,
     end: number,
     groups = {},
-    extra: any = {},
+    extra: Record<string, unknown> = {},
   ) {
     super(data, start, end, groups)
     this.journal = extra.journal || ''
     this.journalName = extra.journalName || ''
   }
 
-  static fromMatch(match: RegExpExecArray, extra: Record<string, any>, offset = 0): Token {
+  static fromMatch(match: RegExpExecArray, extra: Record<string, unknown>, offset = 0): Token {
     // For journal citations, always use the full match (match[0])
     const matchText = match[0]
     const start = (match.index || 0) + offset
@@ -127,7 +127,7 @@ export class JournalCitationToken extends Token {
     // Extract named groups
     const groups = match.groups || {}
     
-    return new this(matchText, start, end, groups, extra)
+    return new JournalCitationToken(matchText, start, end, groups, extra)
   }
 }
 

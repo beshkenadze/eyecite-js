@@ -53,7 +53,7 @@ export function getLawRegexVariables(): Record<string, string> {
   // Extract base variables from REGEXES
   if (REGEXES.law) {
     // Process law section regex - handle multiple sections with §§
-    const sectionRegex = pythonToJavaScriptRegex(
+    const _sectionRegex = pythonToJavaScriptRegex(
       REGEXES.law.section || REGEXES.law.section_regex || 
       '(?P<section>(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\((?:[a-zA-Z]{1}|\\d{1,2})\\))+))'
     )
@@ -118,12 +118,12 @@ export function expandLawRegex(pattern: string, reporterName: string): string {
   
   // First, replace hardcoded § with $section_marker to handle §§
   // But be careful with character classes like [§|s]
-  let preprocessedPattern = pattern
+  const preprocessedPattern = pattern
     .replace(/\[§\|([^\]]+)\]/g, '((§§?)|$1)') // Replace [§|s] with ((§§?)|s)
     .replace(/(?<!\[)§(?!\])/g, '$section_marker') // Replace other § not in brackets
   
   // Recursively substitute all variables
-  let expandedPattern = recursiveSubstitute(preprocessedPattern, variables)
+  const expandedPattern = recursiveSubstitute(preprocessedPattern, variables)
   
   // Add post-law citation pattern to capture year, publisher, etc.
   // This pattern handles various combinations of publisher, year, and parentheticals
