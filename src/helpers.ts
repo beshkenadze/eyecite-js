@@ -3,8 +3,8 @@ import type { CaseCitation, CitationBase, Document, Token, Tokens } from './mode
 import {
   CitationToken,
   FullCaseCitation,
-  type FullJournalCitation,
-  type FullLawCitation,
+  FullJournalCitation,
+  FullLawCitation,
   ParagraphToken,
   PlaceholderCitationToken,
   ResourceCitation,
@@ -456,6 +456,12 @@ export function disambiguateReporters(citations: CitationBase[]): CitationBase[]
   return citations.filter((citation) => {
     // Keep non-ResourceCitations as they don't need disambiguation
     if (!(citation instanceof ResourceCitation)) {
+      return true
+    }
+
+    // Special case: Law and Journal citations don't use editions, so keep them
+    // They have empty exactEditions and variationEditions arrays
+    if (citation instanceof FullLawCitation || citation instanceof FullJournalCitation) {
       return true
     }
 

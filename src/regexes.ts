@@ -27,8 +27,21 @@ export function shortCiteRe(regex: string): string {
 
   // Replace the last \s+ (single backslash) with the short citation pattern
   // Use single backslashes in the replacement since the regex string already has them
-  const beforePageModified = beforePage.replace(/\\s\+$/, '(?:,\\s*|\\s+)at\\s+(?:p\\.\\s+)?')
-
+  // Replace the last whitespace pattern with the short citation pattern
+  // Handle both \s+ and plain spaces, as well as optional comma patterns
+  let beforePageModified = beforePage
+  
+  if (beforePage.endsWith('\\s+')) {
+    // Replace \s+ with the short citation pattern
+    beforePageModified = beforePage.replace(/\\s\+$/, '(?:,\\s*|\\s+)at\\s+(?:p\\.\\s+)?')
+  } else if (beforePage.endsWith(' ')) {
+    // Replace trailing space with the short citation pattern
+    beforePageModified = beforePage.replace(/ $/, '(?:,\\s*|\\s+)at\\s+(?:p\\.\\s+)?')
+  } else if (beforePage.endsWith(',? ')) {
+    // Replace optional comma and space with the short citation pattern
+    beforePageModified = beforePage.replace(/,\? $/, '(?:,\\s*|\\s+)at\\s+(?:p\\.\\s+)?')
+  }
+  
   return beforePageModified + afterPage
 }
 

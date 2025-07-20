@@ -159,7 +159,7 @@ export function expandLawRegex(pattern: string, reporterName: string): string {
   // Add post-law citation pattern to capture year, publisher, etc.
   // This pattern handles various combinations of publisher, year, and parentheticals
   // It also handles "et seq." and other text before the parentheses
-  const postLawPattern = `(?:\\s+et\\s+seq\\.)?(?:\\s*\\((?:(?<publisher>[A-Z][a-z]+\\.?(?:\\s+Supp\\.)?)\\s+)?(?<year>1\\d{3}|20\\d{2})(?:-\\d{2})?\\))?`
+  const postLawPattern = `(?:\\s+et\\s+seq\\.)?(?:\\s*\\((?:(?<publisher>[A-Z][a-zA-Z&.\\s]+(?:Supp\\.)?)\\s+)?(?<year>1\\d{3}|20\\d{2})(?:-\\d{2})?\\))?`
 
   // Check if year/month/day are already in the pattern to avoid duplicates
   const hasYear = expandedPattern.includes('(?<year>')
@@ -191,7 +191,10 @@ export function getReporterRegexVariables(): Record<string, string> {
   }
 
   if (REGEXES.page) {
-    variables.page = pythonToJavaScriptRegex(REGEXES.page[''] || '(?P<page>\\d+)')
+    // Import PAGE_NUMBER_REGEX to support underscores and other special page numbers
+    const { PAGE_NUMBER_REGEX } = require('../regexes')
+    // Use PAGE_NUMBER_REGEX which includes support for underscores, roman numerals, etc.
+    variables.page = `(?<page>${PAGE_NUMBER_REGEX})`
     variables.page_with_commas = pythonToJavaScriptRegex(REGEXES.page.with_commas || '(?P<page>\\d{1,3}(?:,\\d{3})*)')
     variables.page_3_4 = pythonToJavaScriptRegex(REGEXES.page['3_4'] || '(?P<page>\\d{3,4})')
     variables.page_with_commas_and_suffix = pythonToJavaScriptRegex(REGEXES.page.with_commas_and_suffix || '(?P<page>\\d(?:[\\d,]*\\d)?[A-Z]?)')
