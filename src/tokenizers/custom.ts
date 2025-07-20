@@ -4,6 +4,8 @@ import { PAGE_NUMBER_REGEX } from '../regexes'
 import type { Token, TokenExtractor } from './base'
 import { BaseTokenExtractor, Tokenizer } from './base'
 import { createCitationExtractor } from './extractors'
+import { CitationToken } from '../models'
+import { nonalphanumBoundariesRe } from '../regexes'
 
 /**
  * CustomTokenizer extends the base Tokenizer with enhanced extensibility features
@@ -75,14 +77,19 @@ export class CustomTokenizer extends Tokenizer {
     }
 
     // Create the extractor
-    const extractor = createCitationExtractor(
-      regex,
-      [edition],
-      [],
-      [reporterPattern],
-      false,
-      caseSensitive ? 0 : 2, // 2 = case insensitive flag
-    )
+    const extractor = caseSensitive
+      ? new BaseTokenExtractor(
+          nonalphanumBoundariesRe(regex),
+          CitationToken,
+          {
+            exactEditions: [edition],
+            variationEditions: [],
+            short: false,
+          },
+          0, // no flags for case sensitive
+          [reporterPattern],
+        )
+      : createCitationExtractor(regex, [edition], [], [reporterPattern], false)
 
     this.addExtractor(extractor)
     return extractor

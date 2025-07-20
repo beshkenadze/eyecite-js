@@ -8,21 +8,22 @@ export const jokeCite: CitationBase[] = [
       0,
       11,
       { volume: '1', reporter: 'Eyecite', page: '1' },
-      [],
-      [
-        {
-          reporter: {
-            source: 'reporters',
-            isScotus: false,
-            name: 'Eyecite',
-            cite_type: 'specialty',
-            slug: 'eyecite',
-            shortName: 'Eyecite',
-            fullName: 'Eyecite',
+      {
+        exactEditions: [
+          {
+            reporter: {
+              source: 'reporters',
+              isScotus: false,
+              name: 'Eyecite',
+              cite_type: 'specialty',
+              slug: 'eyecite',
+              shortName: 'Eyecite',
+              fullName: 'Eyecite',
+            },
+            reporterFound: 'Eyecite',
           },
-          reporterFound: 'Eyecite',
-        },
-      ],
+        ],
+      },
     ),
     0,
     [],

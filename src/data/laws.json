@@ -632,6 +632,23 @@
             "variations": []
         }
     ],
+    "Cal. Penal Code": [
+        {
+            "cite_type": "leg_statute",
+            "end": null,
+            "examples": [
+                "Cal. Penal Code § 187 (West 2023)"
+            ],
+            "jurisdiction": "California",
+            "name": "West's Annotated California Penal Code",
+            "notes": "California Penal Code with section symbol and optional publisher/year",
+            "regexes": [
+                "$reporter §§? $law_section"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
     "Cal. Regulatory Notice Reg.": [
         {
             "cite_type": "admin_register",
@@ -3967,6 +3984,23 @@
             "variations": []
         }
     ],
+    "N.Y. Gen. Bus. Law": [
+        {
+            "cite_type": "leg_statute",
+            "end": null,
+            "examples": [
+                "N.Y. Gen. Bus. Law § 349 (McKinney 2023)"
+            ],
+            "jurisdiction": "New York",
+            "name": "McKinney's Consolidated Laws of New York - General Business Law",
+            "notes": "New York General Business Law with section symbol and optional publisher/year",
+            "regexes": [
+                "$reporter §§? $law_section"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
     "N.Y. Law": [
         {
             "cite_type": "leg_statute",
@@ -5347,6 +5381,23 @@
             "notes": "Automatically generated. Remove this message if replacing with real examples.",
             "regexes": [
                 "$reporter art (?P<article>\\d+)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Tex. Bus. & Com. Code Ann.": [
+        {
+            "cite_type": "leg_statute",
+            "end": null,
+            "examples": [
+                "Tex. Bus. & Com. Code Ann. §§ 17.41-17.63 (West 2023)"
+            ],
+            "jurisdiction": "Texas",
+            "name": "Vernon's Texas Business & Commerce Code Annotated (West)",
+            "notes": "Texas Business & Commerce Code with section symbol(s) and optional publisher/year",
+            "regexes": [
+                "$reporter §§? $law_section"
             ],
             "start": null,
             "variations": []

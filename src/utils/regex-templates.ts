@@ -21,6 +21,7 @@ export function recursiveSubstitute(
   pattern: string,
   variables: Record<string, string>,
   maxDepth = 10,
+  seenGroups = new Set<string>(),
 ): string {
   let result = pattern
   let depth = 0
@@ -31,7 +32,29 @@ export function recursiveSubstitute(
 
     // Replace all $variable references
     result = result.replace(/\$([a-zA-Z_]+)/g, (match, varName) => {
-      return variables[varName] || match
+      const replacement = variables[varName]
+      if (!replacement) return match
+      
+      // Check for duplicate named groups in the replacement
+      const namedGroupMatches = replacement.match(/\(\?P?<(\w+)>/g)
+      if (namedGroupMatches) {
+        let modifiedReplacement = replacement
+        for (const groupMatch of namedGroupMatches) {
+          const groupName = groupMatch.match(/\(\?P?<(\w+)>/)?.[1]
+          if (groupName && seenGroups.has(groupName)) {
+            // Convert to non-capturing group if we've seen this name before
+            modifiedReplacement = modifiedReplacement.replace(
+              new RegExp(`\\(\\?P?<${groupName}>`, 'g'),
+              '(?:'
+            )
+          } else if (groupName) {
+            seenGroups.add(groupName)
+          }
+        }
+        return modifiedReplacement
+      }
+      
+      return replacement
     })
 
     hasChanges = result !== previous
@@ -55,7 +78,6 @@ export function getLawRegexVariables(): Record<string, string> {
     // Process law section regex - handle multiple sections with §§
     const _sectionRegex = pythonToJavaScriptRegex(
       REGEXES.law.section ||
-        REGEXES.law.section_regex ||
         '(?P<section>(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\((?:[a-zA-Z]{1}|\\d{1,2})\\))+))',
     )
 
@@ -88,9 +110,9 @@ export function getLawRegexVariables(): Record<string, string> {
   }
 
   // Paragraph marker
-  if (REGEXES.paragraph) {
-    variables.paragraph_marker = REGEXES.paragraph?.marker || '¶'
-    variables.paragraph_marker_optional = REGEXES.paragraph?.marker_optional || '¶?'
+  if (REGEXES.paragraph_marker) {
+    variables.paragraph_marker = REGEXES.paragraph_marker || '¶'
+    variables.paragraph_marker_optional = `${REGEXES.paragraph_marker}?` || '¶?'
   }
 
   // Section marker (handle both section symbol § and text variants)
@@ -121,11 +143,15 @@ export function expandLawRegex(pattern: string, reporterName: string): string {
   // Add the reporter name as a variable - wrap in a named group to capture it
   variables.reporter = `(?<reporter>${reporterName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
 
-  // First, replace hardcoded § with $section_marker to handle §§
-  // But be careful with character classes like [§|s]
-  const preprocessedPattern = pattern
-    .replace(/\[§\|([^\]]+)\]/g, '((§§?)|$1)') // Replace [§|s] with ((§§?)|s)
-    .replace(/(?<!\[)§(?!\])/g, '$section_marker') // Replace other § not in brackets
+  // First, check if the pattern already has §§? (handles both single and double section symbols)
+  // If it does, don't do any preprocessing
+  let preprocessedPattern = pattern
+  if (!pattern.includes('§§?')) {
+    // Only replace hardcoded § with $section_marker if pattern doesn't already handle §§
+    preprocessedPattern = pattern
+      .replace(/\[§\|([^\]]+)\]/g, '((§§?)|$1)') // Replace [§|s] with ((§§?)|s)
+      .replace(/(?<!\[)§(?!\])/g, '$section_marker') // Replace other § not in brackets
+  }
 
   // Recursively substitute all variables
   const expandedPattern = recursiveSubstitute(preprocessedPattern, variables)
@@ -147,6 +173,67 @@ export function expandLawRegex(pattern: string, reporterName: string): string {
   if (hasDay) finalPostPattern = finalPostPattern.replace(/\(\?<day>/g, '(?:')
 
   return expandedPattern + finalPostPattern
+}
+
+/**
+ * Get regex variables for reporter citations
+ */
+export function getReporterRegexVariables(): Record<string, string> {
+  const variables: Record<string, string> = {}
+
+  // Extract base variables from REGEXES
+  if (REGEXES.volume) {
+    variables.volume = pythonToJavaScriptRegex(REGEXES.volume?.[''] || '(?P<volume>\\d+)')
+    variables.volume_nominative = pythonToJavaScriptRegex(REGEXES.volume?.nominative || '(?:(?P<volume>\\d{1,2}) )?')
+    variables.volume_with_digit_suffix = pythonToJavaScriptRegex(REGEXES.volume?.with_digit_suffix || '(?P<volume>\\d{1,4}(?:-\\d+)?)')
+    variables.volume_year = pythonToJavaScriptRegex(REGEXES.volume?.year || '(?P<volume>1[789]\\d{2}|20\\d{2})')
+    variables.volume_with_alpha_suffix = pythonToJavaScriptRegex(REGEXES.volume?.with_alpha_suffix || '(?P<volume>\\d{1,4}A?)')
+  }
+
+  if (REGEXES.page) {
+    variables.page = pythonToJavaScriptRegex(REGEXES.page[''] || '(?P<page>\\d+)')
+    variables.page_with_commas = pythonToJavaScriptRegex(REGEXES.page.with_commas || '(?P<page>\\d{1,3}(?:,\\d{3})*)')
+    variables.page_3_4 = pythonToJavaScriptRegex(REGEXES.page['3_4'] || '(?P<page>\\d{3,4})')
+    variables.page_with_commas_and_suffix = pythonToJavaScriptRegex(REGEXES.page.with_commas_and_suffix || '(?P<page>\\d(?:[\\d,]*\\d)?[A-Z]?)')
+  }
+
+  if (REGEXES.full_cite) {
+    variables.full_cite = REGEXES.full_cite[''] || '$volume $reporter,? $page'
+    variables.full_cite_paragraph = REGEXES.full_cite.cch || '(?:$volume_with_digit_suffix )?$reporter $paragraph_marker_optional$page_with_commas'
+    variables.full_cite_year_page = REGEXES.full_cite.year_page || '$reporter $volume_year-$page'
+    // Add format neutral citations
+    variables.full_cite_format_neutral = REGEXES.full_cite.format_neutral?.[''] || '$volume_year-$reporter-$page'
+    variables.full_cite_format_neutral_3_4 = REGEXES.full_cite.format_neutral?.['3_4'] || '$volume_year-$reporter-$page_3_4'
+    // Add Illinois neutral citation
+    variables.full_cite_illinois_neutral = REGEXES.full_cite.illinois_neutral?.[''] || '$volume_year $reporter (?P<page>\\d{6}(?:-[A-Z]|WC)?)'
+  }
+
+  if (REGEXES.paragraph_marker) {
+    variables.paragraph_marker = REGEXES.paragraph_marker || '¶'
+    variables.paragraph_marker_optional = `${REGEXES.paragraph_marker}?` || '¶?'
+  }
+
+  return variables
+}
+
+/**
+ * Expand a reporter citation regex pattern with template substitution
+ */
+export function expandReporterRegex(pattern: string, reporterName: string): string {
+  const variables = getReporterRegexVariables()
+
+  // Add the reporter name as a variable - wrap in a named group to capture it
+  variables.reporter = `(?<reporter>${reporterName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
+
+  // Recursively substitute all variables - each pattern gets its own seenGroups set
+  return recursiveSubstitute(pattern, variables, 10, new Set<string>())
+}
+
+/**
+ * Create reporter citation regex patterns
+ */
+export function createReporterCitationRegex(reporterName: string, patterns: string[]): string[] {
+  return patterns.map((pattern) => expandReporterRegex(pattern, reporterName))
 }
 
 /**

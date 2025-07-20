@@ -125,6 +125,19 @@ export abstract class ResourceCitation extends CitationBase {
 export abstract class FullCitation extends ResourceCitation {}
 
 export class FullLawCitation extends FullCitation {
+  get volume(): string {
+    // Law citations use different group names: chapter (C.F.R.), title (U.S.C.), or volume
+    return this.groups.chapter || this.groups.title || this.groups.volume || ''
+  }
+
+  get reporter(): string {
+    return this.groups.reporter || ''
+  }
+
+  get section(): string {
+    return this.groups.section || ''
+  }
+
   correctedCitationFull(): string {
     const parts = [this.correctedCitation()]
     const m = this.metadata

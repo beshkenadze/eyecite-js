@@ -2,7 +2,7 @@ import { JOURNALS, LAWS, REPORTERS } from '../data'
 import type { Edition } from '../models'
 import { Reporter } from '../models'
 import { PAGE_NUMBER_REGEX, shortCiteRe } from '../regexes'
-import { createLawCitationRegex } from '../utils/regex-templates'
+import { createLawCitationRegex, createReporterCitationRegex } from '../utils/regex-templates'
 import type { TokenExtractor } from './base'
 import { Tokenizer } from './base'
 import {
@@ -59,31 +59,55 @@ function buildCitationExtractors(): TokenExtractor[] {
       for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
         const escapedEdition = editionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-        // Check if this edition has special regex patterns
-        let fullRegex: string
-        let shortRegex: string
-
-        if (editionData.regexes?.includes('$full_cite_year_page')) {
-          // Special handling for year-page format (e.g., T.C. Memo. 2019-233)
-          fullRegex = `(?<reporter>${escapedEdition})\\s+(?<volume>\\d{4})-(?<page>\\d+)`
-          shortRegex = shortCiteRe(fullRegex)
-        } else {
-          // Standard volume-reporter-page format
-          fullRegex = `(?<volume>\\d+)\\s+(?<reporter>${escapedEdition})\\s+(?<page>${PAGE_NUMBER_REGEX})`
-          shortRegex = shortCiteRe(fullRegex)
-        }
-
         // Find the specific edition from allEditions
-        const specificEdition = allEditions.find((e) => e.reporter.editionStr === editionName)
+        const specificEdition = allEditions.find((e) => e.reporter.shortName === editionName)
         const editionsToUse = specificEdition ? [specificEdition] : allEditions
 
-        // Create full citation extractor
-        extractors.push(createCitationExtractor(fullRegex, editionsToUse, [], [editionName], false))
+        // Check if this edition has custom regex patterns
+        if ((editionData as any).regexes && Array.isArray((editionData as any).regexes)) {
+          // Process each custom regex pattern
+          const customPatterns = createReporterCitationRegex(editionName, (editionData as any).regexes)
+          
+          for (const pattern of customPatterns) {
+            try {
+              // Test pattern compilation
+              new RegExp(pattern)
+              
+              // Create full citation extractor
+              extractors.push(createCitationExtractor(pattern, editionsToUse, [], [editionName], false))
+              
+              // Create short citation extractor
+              const shortPattern = shortCiteRe(pattern)
+              extractors.push(createCitationExtractor(shortPattern, editionsToUse, [], [editionName], true))
+            } catch (e) {
+              console.error(`Invalid regex pattern for ${editionName}: ${pattern}`)
+              console.error(`Error: ${e.message}`)
+            }
+          }
+        } else {
+          // No custom regex patterns, use standard format
+          let fullRegex: string
+          let shortRegex: string
 
-        // Create short citation extractor
-        extractors.push(createCitationExtractor(shortRegex, editionsToUse, [], [editionName], true))
+          if ((editionData as any).regexes?.includes('$full_cite_year_page')) {
+            // Special handling for year-page format (e.g., T.C. Memo. 2019-233)
+            fullRegex = `(?<reporter>${escapedEdition})\\s+(?<volume>\\d{4})-(?<page>\\d+)`
+            shortRegex = shortCiteRe(fullRegex)
+          } else {
+            // Standard volume-reporter-page format
+            fullRegex = `(?<volume>\\d+)\\s+(?<reporter>${escapedEdition})\\s+(?<page>${PAGE_NUMBER_REGEX})`
+            shortRegex = shortCiteRe(fullRegex)
+          }
+
+          // Create full citation extractor
+          extractors.push(createCitationExtractor(fullRegex, editionsToUse, [], [editionName], false))
+
+          // Create short citation extractor
+          extractors.push(createCitationExtractor(shortRegex, editionsToUse, [], [editionName], true))
+        }
 
         // For special reporters like NMCERT and Ohio, also create hyphen-separated patterns
+        // This should be outside the else block to work for all editions
         if (editionName === 'NMCERT' || editionName === 'Ohio') {
           const hyphenRegex = `(?<volume>\\d+)-(?<reporter>${escapedEdition})-(?<page>${PAGE_NUMBER_REGEX})`
           extractors.push(
@@ -102,7 +126,7 @@ function buildCitationExtractors(): TokenExtractor[] {
           let shortVarRegex: string
 
           const canonicalEditionData = reporterData.editions[canonical]
-          if (canonicalEditionData?.regexes?.includes('$full_cite_year_page')) {
+          if ((canonicalEditionData as any)?.regexes?.includes('$full_cite_year_page')) {
             // Special handling for year-page format variations
             varRegex = `(?<reporter>${escapedVariation})\\s+(?<volume>\\d{4})-(?<page>\\d+)`
             shortVarRegex = shortCiteRe(varRegex)
@@ -113,7 +137,7 @@ function buildCitationExtractors(): TokenExtractor[] {
           }
 
           // Find the canonical edition
-          const canonicalEdition = allEditions.find((e) => e.reporter.editionStr === canonical)
+          const canonicalEdition = allEditions.find((e) => e.reporter.shortName === canonical)
           const editionsToUse = canonicalEdition ? [canonicalEdition] : allEditions
 
           // Full citation for variation
