@@ -11,6 +11,7 @@ import {
   createLawCitationExtractor,
   createSpecialExtractors,
 } from './extractors'
+import { fixNominativeReporterPattern } from './nominative-fix'
 
 export class DefaultTokenizer extends Tokenizer {
   constructor() {
@@ -59,14 +60,18 @@ function buildCitationExtractors(): TokenExtractor[] {
       for (const [editionName, editionData] of Object.entries(reporterData.editions)) {
         const escapedEdition = editionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-        // Find the specific edition from allEditions
-        const specificEdition = allEditions.find((e) => e.reporter.shortName === editionName)
-        const editionsToUse = specificEdition ? [specificEdition] : allEditions
+        // Use ALL editions for this reporter to enable proper disambiguation
+        // This matches the Python implementation where all editions are included
+        // so that ambiguous reporters (with multiple editions) can be detected
+        const editionsToUse = allEditions
 
         // Check if this edition has custom regex patterns
         if ((editionData as any).regexes && Array.isArray((editionData as any).regexes)) {
           // Process each custom regex pattern
-          const customPatterns = createReporterCitationRegex(editionName, (editionData as any).regexes)
+          const rawPatterns = (editionData as any).regexes.map((p: string) => 
+            fixNominativeReporterPattern(p, editionName)
+          )
+          const customPatterns = createReporterCitationRegex(editionName, rawPatterns)
           
           for (const pattern of customPatterns) {
             try {
@@ -136,9 +141,9 @@ function buildCitationExtractors(): TokenExtractor[] {
             shortVarRegex = shortCiteRe(varRegex)
           }
 
-          // Find the canonical edition
-          const canonicalEdition = allEditions.find((e) => e.reporter.shortName === canonical)
-          const editionsToUse = canonicalEdition ? [canonicalEdition] : allEditions
+          // Use ALL editions for this reporter to enable proper disambiguation
+          // Variations should also include all editions so ambiguity can be detected
+          const editionsToUse = allEditions
 
           // Full citation for variation
           extractors.push(createCitationExtractor(varRegex, [], editionsToUse, [variation], false))

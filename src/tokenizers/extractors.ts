@@ -21,6 +21,7 @@ import {
   SUPRA_REGEX,
 } from '../regexes'
 import { BaseTokenExtractor } from './base'
+import { isNominativeInCaseNameContext } from './nominative-context'
 
 // Nominative reporter names that need special handling
 export const NOMINATIVE_REPORTER_NAMES = new Set([
@@ -75,6 +76,45 @@ export function createSpecialExtractors(): BaseTokenExtractor[] {
   ]
 }
 
+// Custom extractor that filters nominative reporters in case name contexts
+class NominativeAwareCitationExtractor extends BaseTokenExtractor {
+  constructor(
+    regex: string,
+    extra: Record<string, unknown> = {},
+    flags = 0,
+    strings: string[] = [],
+  ) {
+    super(regex, CitationToken, extra, flags, strings)
+  }
+
+  getMatches(text: string): RegExpExecArray[] {
+    const matches = super.getMatches(text)
+    
+    // Filter out matches that are nominative reporters in case name contexts
+    return matches.filter(match => {
+      // Check if any edition is a nominative reporter
+      const editions = [...(this.extra.exactEditions as Edition[] || []), 
+                       ...(this.extra.variationEditions as Edition[] || [])]
+      
+      for (const edition of editions) {
+        if (NOMINATIVE_REPORTER_NAMES.has(edition.reporter.shortName)) {
+          // Check if this match is in a case name context
+          if (isNominativeInCaseNameContext(
+            text,
+            match.index || 0,
+            (match.index || 0) + match[0].length,
+            edition.reporter.shortName
+          )) {
+            return false // Filter out this match
+          }
+        }
+      }
+      
+      return true
+    })
+  }
+}
+
 // Helper to create citation extractors from reporter data
 export function createCitationExtractor(
   regex: string,
@@ -83,6 +123,26 @@ export function createCitationExtractor(
   strings: string[],
   short = false,
 ): BaseTokenExtractor {
+  // Check if any edition is a nominative reporter
+  const hasNominative = [...exactEditions, ...variationEditions].some(
+    edition => NOMINATIVE_REPORTER_NAMES.has(edition.reporter.shortName)
+  )
+  
+  if (hasNominative) {
+    // Use the nominative-aware extractor
+    return new NominativeAwareCitationExtractor(
+      nonalphanumBoundariesRe(regex),
+      {
+        exactEditions,
+        variationEditions,
+        short,
+      },
+      0,
+      strings,
+    )
+  }
+  
+  // Use the standard extractor
   return new BaseTokenExtractor(
     nonalphanumBoundariesRe(regex),
     CitationToken,
