@@ -367,6 +367,8 @@ function extractFullCitation(document: Document, index: number): FullCitation {
   return citation
 }
 
+
+
 /**
  * Extract a short form citation from the document
  */
@@ -449,11 +451,12 @@ function extractShortformCitation(document: Document, index: number): ShortCaseC
       pinCite,
       parenthetical,
     },
-    undefined, // spanStart
-    spanEnd, // spanEnd
-    citeToken.start, // fullSpanStart - short citations don't include case names, so fullSpanStart = spanStart
-    spanEnd, // fullSpanEnd
   )
+  
+  // Set span properties after construction
+  citation.spanEnd = spanEnd
+  citation.fullSpanStart = citeToken.start // short citations don't include case names, so fullSpanStart = spanStart
+  citation.fullSpanEnd = spanEnd
 
   if (document.markupText) {
     findCaseNameInHtml(citation as CaseCitation, document, true)
@@ -484,7 +487,8 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
   // For supra citations, we need simpler pin cite extraction
   // Look for patterns like ", at 2" or ", at 2-3" after supra
   let pinCite: string | undefined
-  let spanEnd = words[index].end
+  const indexToken = words[index]
+  let spanEnd = typeof indexToken === 'string' ? 0 : indexToken.end
   let parenthetical: string | undefined
 
   // Build text after supra token
@@ -497,7 +501,7 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
   const pinCiteMatch = afterText.match(/^,?\s*((?:at\s+)?\d+(?:-\d+)?(?:\s*[&,]\s*\d+(?:-\d+)?)*)/)
   if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
-    spanEnd = words[index].end + pinCiteMatch[0].length
+    spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + pinCiteMatch[0].length
 
     // Check for parenthetical after pin cite
     const remainingText = afterText.substring(pinCiteMatch[0].length)
@@ -511,7 +515,7 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
     const parenMatch = afterText.match(/^\s*\(([^)]+)\)/)
     if (parenMatch) {
       parenthetical = parenMatch[1]
-      spanEnd = words[index].end + parenMatch[0].length
+      spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + parenMatch[0].length
     }
   }
   let antecedentGuess: string | undefined
@@ -580,7 +584,7 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
     undefined, // spanStart
     spanEnd, // spanEnd
     supraToken.start - antecedentLength, // fullSpanStart
-    spanEnd || supraToken.end, // fullSpanEnd
+    spanEnd || (typeof supraToken === 'string' ? 0 : supraToken.end), // fullSpanEnd
   )
 }
 
@@ -590,7 +594,8 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
 function extractIdCitation(words: Tokens, index: number): IdCitation {
   // Similar to supra citations, we need simpler pin cite extraction
   let pinCite: string | undefined
-  let spanEnd = words[index].end
+  const indexToken = words[index]
+  let spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end)
   let parenthetical: string | undefined
 
   // Build text after id token
@@ -603,7 +608,7 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
   const pinCiteMatch = afterText.match(/^\s*((?:at\s+)?\d+(?:-\d+)?(?:\s*[&,]\s*\d+(?:-\d+)?)*)/)
   if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
-    spanEnd = words[index].end + pinCiteMatch[0].length
+    spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + pinCiteMatch[0].length
 
     // Check for parenthetical after pin cite
     const remainingText = afterText.substring(pinCiteMatch[0].length)
@@ -617,7 +622,7 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
     const parenMatch = afterText.match(/^\s*\(([^)]+)\)/)
     if (parenMatch) {
       parenthetical = parenMatch[1]
-      spanEnd = words[index].end + parenMatch[0].length
+      spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + parenMatch[0].length
     }
   }
 
@@ -698,7 +703,10 @@ function extractMultipleLawCitations(document: Document, index: number): FullLaw
         section: sectionNumber,
         title: token.groups?.title,
       },
-      token.data,
+      {
+        reporter: token.reporter,
+        lawType: token.lawType,
+      },
     )
 
     // Create the additional citation

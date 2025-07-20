@@ -1184,6 +1184,41 @@ describe('Find Citations', () => {
       ])
     })
 
+    // C.F.R. single section
+    test('should find single C.F.R. section citation', () => {
+      assertCitations('See 29 C.F.R. § 778.113 for overtime requirements.', [
+        {
+          type: FullLawCitation,
+          reporter: 'C.F.R.',
+          groups: {
+            chapter: '29',
+            reporter: 'C.F.R.',
+            section: '778.113',
+          },
+        },
+      ])
+    })
+
+    // C.F.R. section range
+    test('should find C.F.R. section range citation', () => {
+      assertCitations('The regulation at 29 C.F.R. §§ 778.217-778.219 covers expenses.', [
+        {
+          type: FullLawCitation,
+          reporter: 'C.F.R.',
+          groups: {
+            chapter: '29',
+            reporter: 'C.F.R.',
+            section: '778.217-778.219',
+          },
+        },
+      ])
+    })
+
+    // Invalid format should not match
+    test('should not find improperly formatted CFR citation', () => {
+      assertCitations('Check 29 CFR 778.113 for details.', [])
+    })
+
     // U.S.C. with space variations
     test('should find U.S.C. citation with space variations', () => {
       assertCitations('18 U. S. C. §§4241-4243', [
@@ -1194,6 +1229,89 @@ describe('Find Citations', () => {
             reporter: 'U. S. C.',
             title: '18',
             section: '4241-4243',
+          },
+        },
+      ])
+    })
+
+    // State statute citations that currently don't parse
+    // These are skipped because law citation support is not yet implemented
+    test('should find California Penal Code citation with publisher and year', () => {
+      assertCitations('Cal. Penal Code § 187 (West 2023)', [
+        {
+          type: FullLawCitation,
+          reporter: 'Cal. Penal Code',
+          year: 2023,
+          groups: {
+            reporter: 'Cal. Penal Code',
+            section: '187',
+          },
+          metadata: {
+            publisher: 'West',
+          },
+        },
+      ])
+    })
+
+    test('should find New York General Business Law citation with publisher and year', () => {
+      assertCitations('N.Y. Gen. Bus. Law § 349 (McKinney 2023)', [
+        {
+          type: FullLawCitation,
+          reporter: 'N.Y. Gen. Bus. Law',
+          year: 2023,
+          groups: {
+            reporter: 'N.Y. Gen. Bus. Law',
+            section: '349',
+          },
+          metadata: {
+            publisher: 'McKinney',
+          },
+        },
+      ])
+    })
+
+    test('should find Texas Business & Commerce Code citation with multiple sections', () => {
+      assertCitations('Tex. Bus. & Com. Code Ann. §§ 17.41-17.63 (West 2023)', [
+        {
+          type: FullLawCitation,
+          reporter: 'Tex. Bus. & Com. Code Ann.',
+          year: 2023,
+          groups: {
+            reporter: 'Tex. Bus. & Com. Code Ann.',
+            section: '17.41-17.63',
+          },
+          metadata: {
+            publisher: 'West',
+          },
+        },
+      ])
+    })
+
+    // Restatement citations that currently don't parse
+    // These are skipped because restatement citation support is not yet implemented
+    test.skip('should find Restatement (Second) of Contracts citation', () => {
+      assertCitations('Restatement (Second) of Contracts § 90 (1981)', [
+        {
+          type: FullLawCitation,
+          reporter: 'Restatement (Second) of Contracts',
+          year: 1981,
+          groups: {
+            reporter: 'Restatement (Second) of Contracts',
+            section: '90',
+          },
+        },
+      ])
+    })
+
+    test.skip('should find Restatement (Third) of Torts citation with multiple sections', () => {
+      assertCitations('Restatement (Third) of Torts §§ 1-8 (2010)', [
+        {
+          type: FullLawCitation,
+          reporter: 'Restatement (Third) of Torts',
+          year: 2010,
+          groups: {
+            reporter: 'Restatement (Third) of Torts',
+            section: '1-8',
           },
         },
       ])

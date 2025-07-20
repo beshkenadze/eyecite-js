@@ -110,7 +110,7 @@ export class Metadata {
   pinCite?: string
   pinCiteSpanStart?: number
   pinCiteSpanEnd?: number
-  year?: string
+  year?: string | number
   month?: string
   day?: string
   court?: string
@@ -122,6 +122,16 @@ export class Metadata {
   resolvedCaseName?: string
   publisher?: string
   volume?: string
+  journal?: string
+  journalName?: string
+  reporter?: string
+  chapter?: string
+  section?: string
+  title?: string
+  page?: string
+  yearRange?: string
+  endYear?: number
+  warnings?: string[]
 
   constructor(data?: Partial<Metadata>) {
     if (data) {
@@ -199,8 +209,8 @@ export interface Document {
   cleanSteps?: Array<string | ((text: string) => string)>
   emphasisTags: Array<[string, number, number]>
   sourceText: string
-  plainToMarkup?: unknown
-  markupToPlain?: unknown
+  plainToMarkup?: import('../span-updater').SpanUpdater
+  markupToPlain?: import('../span-updater').SpanUpdater
 }
 
 // Resource represents something that a citation references

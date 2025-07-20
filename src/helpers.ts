@@ -22,7 +22,7 @@ import {
   STOP_WORD_REGEX,
   YEAR_REGEX,
 } from './regexes'
-import { bisectRight } from './span-updater'
+import { bisectRight, type SpanUpdater } from './span-updater'
 
 const BACKWARD_SEEK = 28 // Median case name length in the CL db is 28 (2016-02-26)
 const MAX_MATCH_CHARS = 300
@@ -500,7 +500,7 @@ export function findHtmlTagsAtPosition(
     return []
   }
 
-  const markupLoc = document.plainToMarkup.update(position, bisectRight)
+  const markupLoc = (document.plainToMarkup as SpanUpdater).update(position, bisectRight)
   const tags = document.emphasisTags.filter((tag) => tag[1] <= markupLoc && markupLoc < tag[2])
 
   if (tags.length !== 1) {
@@ -1154,8 +1154,8 @@ function extractPlaintiffDefendantFromVersus(
 
       // Set fullSpanStart based on the position before the 'v' token
       const startIndex = Math.max(0, index - 5)
-      if (startIndex < words.length && words[startIndex].start !== undefined) {
-        citation.fullSpanStart = words[startIndex].start
+      if (startIndex < words.length && typeof words[startIndex] !== 'string' && (words[startIndex] as Token).start !== undefined) {
+        citation.fullSpanStart = (words[startIndex] as Token).start
       }
     }
     return

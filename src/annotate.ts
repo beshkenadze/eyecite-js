@@ -2,6 +2,7 @@ import type { Element, Node, Text } from 'domhandler'
 import { parseDocument } from 'htmlparser2'
 import { getCitations } from './find'
 import type { CitationBase } from './models'
+import type { Tokenizer } from './tokenizers'
 
 // Type definitions
 export interface AnnotationOptions {
@@ -12,7 +13,7 @@ export interface AnnotationOptions {
   // Citations to annotate (if not provided, will extract from text)
   citations?: CitationBase[]
   // Tokenizer to use for citation extraction
-  tokenizer?: { tokenize: (text: string) => [unknown[], unknown[]] }
+  tokenizer?: Tokenizer
 }
 
 /**
@@ -37,7 +38,9 @@ export function annotateCitations(plainText: string, options: AnnotationOptions 
 
   const {
     annotateFunc = defaultAnnotateFunc,
-    citations = getCitations(plainText, false, options.tokenizer),
+    citations = options.tokenizer 
+      ? getCitations(plainText, false, options.tokenizer)
+      : getCitations(plainText, false),
   } = options
 
   if (citations.length === 0) {
@@ -189,7 +192,9 @@ export function annotateCitationsHtml(htmlText: string, options: AnnotationOptio
     .join('')
 
   // Get citations from plain text
-  const citationsToUse = citations || getCitations(plainText, false, tokenizer)
+  const citationsToUse = citations || (tokenizer 
+    ? getCitations(plainText, false, tokenizer)
+    : getCitations(plainText, false))
 
   if (citationsToUse.length === 0) {
     return htmlText

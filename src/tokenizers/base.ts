@@ -1,4 +1,5 @@
 import type { Token, Tokens } from '../models'
+export type { Token } from '../models'
 
 export interface TokenExtractor {
   regex: string

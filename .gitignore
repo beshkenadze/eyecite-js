@@ -9,6 +9,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# Generated JavaScript files (TypeScript compiles to JS)
+src/**/*.js
+
 # Environment variables
 .env
 .env.local
