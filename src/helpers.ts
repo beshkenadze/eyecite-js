@@ -526,24 +526,36 @@ export function convertHtmlToPlainTextAndLoc(
   document: Document,
   results: Array<[string, number, number]>,
 ): [string, number, number] {
-  const [tagText, _tagStart, _tagEnd] = results[0]
+  const [tagText, tagStart, tagEnd] = results[0]
 
   if (!document.markupToPlain) {
     return ['', 0, 0]
   }
 
-  // The tagText is the content of the emphasis tag
-  // We need to find where this text appears in the plain text
-  const plainTextIndex = document.plainText.indexOf(tagText)
+  // Convert markup positions to plain text positions using the SpanUpdater
+  const plainStart = (document.markupToPlain as SpanUpdater).update(tagStart, bisectRight)
+  const plainEnd = (document.markupToPlain as SpanUpdater).update(tagEnd, bisectRight)
 
-  if (plainTextIndex === -1) {
-    return ['', 0, 0]
+  // Extract the text from the plain text document
+  const extractedText = document.plainText.substring(plainStart, plainEnd)
+
+  // Verify that the extracted text matches the tag text (it should)
+  if (extractedText.trim() !== tagText.trim()) {
+    // If they don't match, fall back to indexOf but use the converted start position
+    // to find the nearest occurrence
+    const searchStart = Math.max(0, plainStart - 50)
+    const searchEnd = Math.min(document.plainText.length, plainEnd + 50)
+    const searchText = document.plainText.substring(searchStart, searchEnd)
+    const idx = searchText.indexOf(tagText)
+    
+    if (idx !== -1) {
+      const actualStart = searchStart + idx
+      const actualEnd = actualStart + tagText.length
+      return [tagText, actualStart, actualEnd]
+    }
   }
 
-  const start = plainTextIndex
-  const end = plainTextIndex + tagText.length
-
-  return [tagText, start, end]
+  return [extractedText, plainStart, plainEnd]
 }
 
 /**
@@ -570,28 +582,28 @@ export function findCaseNameInHtml(
     // Look for emphasis tags that appear before the citation
     for (let i = 0; i < document.emphasisTags.length; i++) {
       const tag = document.emphasisTags[i]
-      const [text, _markupStart, _markupEnd] = tag
+      const [text, markupStart, markupEnd] = tag
 
-      // Find where this text appears in the plain text
-      // Since emphasis tags can appear multiple times, we need to find the right occurrence
+      // Find where this emphasis tag's text appears in the plain text
+      // We need to search for the exact text near where we expect it based on context
       let plainStart = -1
       let plainEnd = -1
-
-      // Search for this text in the plain text before the citation
+      
+      // Search for the text in the plain text before the citation
       let searchFrom = 0
       while (searchFrom < citationStart) {
         const idx = document.plainText.indexOf(text, searchFrom)
         if (idx === -1) break
-
-        // Check if this occurrence is before the citation and matches our markup position roughly
+        
+        // Check if this occurrence is before the citation
         if (idx + text.length <= citationStart) {
           plainStart = idx
           plainEnd = idx + text.length
         }
         searchFrom = idx + 1
       }
-
-      // Skip if we couldn't find the text in plain text
+      
+      // Skip if we couldn't find the text before the citation
       if (plainStart === -1) continue
 
       // Check if this tag is before and near the citation
@@ -628,9 +640,16 @@ export function findCaseNameInHtml(
               const defendantMatch = defendantText.match(/^([^,]+)/)
 
               if (defendantMatch) {
-                citation.metadata.plaintiff = stripStopWords(fullText.trim())
+                const cleanedPlaintiff = stripStopWords(fullText.trim())
+                // Only set plaintiff if it's not just a business suffix
+                if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+                  citation.metadata.plaintiff = cleanedPlaintiff
+                }
                 citation.metadata.defendant = stripStopWords(defendantMatch[1].trim())
-                citation.fullSpanStart = plainStart
+                // Only set fullSpanStart if plaintiff is valid
+                if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+                  citation.fullSpanStart = plainStart
+                }
                 return
               }
             }
@@ -651,17 +670,22 @@ export function findCaseNameInHtml(
         // Look ahead for more consecutive tags
         for (let j = i + 1; j < document.emphasisTags.length; j++) {
           const nextTag = document.emphasisTags[j]
-          const [nextText, _nextMarkupStart, _nextMarkupEnd] = nextTag
+          const [nextText, nextMarkupStart, nextMarkupEnd] = nextTag
 
           // Find where this next tag's text appears in the plain text
           let nextPlainStart = -1
           let nextPlainEnd = -1
-
+          
           // Search starting from the end of the previous tag
           const nextIdx = document.plainText.indexOf(nextText, plainEnd)
           if (nextIdx !== -1 && nextIdx < citationStart) {
             nextPlainStart = nextIdx
             nextPlainEnd = nextIdx + nextText.length
+          }
+
+          // Skip if we couldn't find the text or it's after the citation
+          if (nextPlainStart === -1 || nextPlainStart >= citationStart) {
+            break
           }
 
           // Check if tags are consecutive (allow small gap for whitespace)
@@ -725,6 +749,25 @@ export function findCaseNameInHtml(
 }
 
 // Helper functions for case name finding
+
+/**
+ * Check if a string is just a business suffix without an actual company name
+ */
+function isBusinessSuffixOnly(text: string): boolean {
+  if (!text) return false
+  const cleaned = text.trim().replace(/[,.\s]+$/, '')
+  // Common business suffixes
+  const suffixes = [
+    'Corp', 'Corporation', 'Inc', 'Incorporated', 'Ltd', 'Limited',
+    'LLC', 'L.L.C.', 'LLP', 'L.L.P.', 'Co', 'Company', 'Assoc',
+    'Associates', 'Assn', "Ass'n", 'Association', 'Bros', 'Brothers',
+    'Grp', 'Group', 'Ent', 'Enterprises', 'Ind', 'Industries',
+    'Intl', "Int'l", 'International', 'Natl', "Nat'l", 'National'
+  ]
+  
+  // Check if the cleaned text matches any suffix exactly (case insensitive)
+  return suffixes.some(suffix => cleaned.toLowerCase() === suffix.toLowerCase())
+}
 
 function initializeSearchState(citation: CaseCitation): any {
   return {
@@ -970,18 +1013,31 @@ function processCaseName(
 
     // Clean and set names (only if not already set)
     if (plaintiffText && !citation.metadata.plaintiff) {
-      citation.metadata.plaintiff = stripStopWords(plaintiffText)
+      const cleanedPlaintiff = stripStopWords(plaintiffText)
+      // Only set plaintiff if it's not just a business suffix
+      if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+        citation.metadata.plaintiff = cleanedPlaintiff
+      }
     }
     if (defendantText && !citation.metadata.defendant) {
       citation.metadata.defendant = stripStopWords(defendantText)
     }
 
     // Calculate full span
-    if (plaintiffStart < citation.index) {
-      const offset = words
-        .slice(plaintiffStart, citation.index)
-        .reduce((acc, w) => acc + String(w).length, 0)
-      citation.fullSpanStart = citation.span().start - offset
+    if (plaintiffStart < citation.index && plaintiffText) {
+      if (!isBusinessSuffixOnly(stripStopWords(plaintiffText))) {
+        // Include plaintiff in full span
+        const offset = words
+          .slice(plaintiffStart, citation.index)
+          .reduce((acc, w) => acc + String(w).length, 0)
+        citation.fullSpanStart = citation.span().start - offset
+      } else if (state.vTokenIndex !== undefined) {
+        // Start from 'v' token when plaintiff is just a business suffix
+        const vToken = words[state.vTokenIndex]
+        if (vToken && typeof vToken !== 'string' && 'start' in vToken) {
+          citation.fullSpanStart = vToken.start
+        }
+      }
     }
   } else if (state.candidateCaseName) {
     // No v token, just set as defendant or antecedent guess
@@ -1191,13 +1247,23 @@ function extractPlaintiffDefendantFromVersus(
     const afterV = words.slice(defendantStartIdx, defendantEndIndex).join('').trim()
 
     if (beforeV && afterV) {
-      citation.metadata.plaintiff = stripStopWords(beforeV)
+      const cleanedPlaintiff = stripStopWords(beforeV)
+      // Only set plaintiff if it's not just a business suffix
+      if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+        citation.metadata.plaintiff = cleanedPlaintiff
+      }
       citation.metadata.defendant = stripStopWords(afterV)
 
       // Set fullSpanStart based on the position before the 'v' token
-      const startIndex = Math.max(0, index - 5)
-      if (startIndex < words.length && typeof words[startIndex] !== 'string' && (words[startIndex] as Token).start !== undefined) {
-        citation.fullSpanStart = (words[startIndex] as Token).start
+      // If plaintiff is just a business suffix, start from the 'v' token
+      if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+        const startIndex = Math.max(0, index - 5)
+        if (startIndex < words.length && typeof words[startIndex] !== 'string' && (words[startIndex] as Token).start !== undefined) {
+          citation.fullSpanStart = (words[startIndex] as Token).start
+        }
+      } else {
+        // Start from 'v' token when plaintiff is invalid
+        citation.fullSpanStart = versusToken.start
       }
     }
     return
@@ -1261,13 +1327,20 @@ function extractFromSeparateHtmlElements(
   const [defendant] = convertHtmlToPlainTextAndLoc(document, defendantTags)
 
   // Clean and update citation
-  citation.metadata.plaintiff = stripStopWords(plaintiff)
+  const cleanedPlaintiff = stripStopWords(plaintiff)
     .trim()
     .replace(/^[(,]+|[,)]+$/g, '')
+  // Only set plaintiff if it's not just a business suffix
+  if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+    citation.metadata.plaintiff = cleanedPlaintiff
+  }
   citation.metadata.defendant = stripStopWords(defendant)
     .trim()
     .replace(/^[(,]+|[,)]+$/g, '')
-  citation.fullSpanStart = pStart
+  // Only set fullSpanStart if plaintiff is valid
+  if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+    citation.fullSpanStart = pStart
+  }
 }
 
 function extractFromMultipleHtmlElements(
@@ -1286,15 +1359,15 @@ function extractFromMultipleHtmlElements(
   let _vBetweenTags = false
 
   for (let i = 0; i < tags.length; i++) {
-    const [text] = tags[i]
+    const [text, markupStart, markupEnd] = tags[i]
 
     // Find where this text appears in the plain text
     const searchStart = lastPlainEnd === -1 ? 0 : lastPlainEnd
     const plainStart = document.plainText.indexOf(text, searchStart)
-
+    
     if (plainStart !== -1) {
       const plainEnd = plainStart + text.length
-
+      
       if (firstPlainStart === -1) {
         firstPlainStart = plainStart
       }
@@ -1335,14 +1408,21 @@ function extractFromMultipleHtmlElements(
     const defendant = combinedText.substring(vMatch.index + vMatch[0].length).trim()
 
     // Clean and update citation
-    citation.metadata.plaintiff = stripStopWords(plaintiff)
+    const cleanedPlaintiff = stripStopWords(plaintiff)
       .replace(/^[(,]+|[,)]+$/g, '')
       .trim()
+    // Only set plaintiff if it's not just a business suffix
+    if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+      citation.metadata.plaintiff = cleanedPlaintiff
+    }
     citation.metadata.defendant = stripStopWords(defendant)
       .replace(/^[(,]+|[,)]+$/g, '')
       .replace(/,$/, '')
       .trim()
-    citation.fullSpanStart = firstPlainStart
+    // Only set fullSpanStart if plaintiff is valid
+    if (!isBusinessSuffixOnly(cleanedPlaintiff)) {
+      citation.fullSpanStart = firstPlainStart
+    }
   } else {
     // No 'v' found, treat as defendant only
     citation.metadata.defendant = stripStopWords(combinedText)

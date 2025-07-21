@@ -46,7 +46,8 @@ import { placeholderMarkup } from './utils'
  * @returns Array of [text, start, end] tuples for emphasis tags
  */
 function identifyEmphasisTags(markupText: string): Array<[string, number, number]> {
-  const pattern = /<(em|i|strong|b)[^>]*>(.*?)<\/\1>/gi
+  // Use 's' flag to make . match newlines
+  const pattern = /<(em|i|strong|b)[^>]*>([\s\S]*?)<\/\1>/gi
   const tags: Array<[string, number, number]> = []
 
   let match: RegExpExecArray | null

@@ -1287,9 +1287,8 @@ describe('Find Citations', () => {
       ])
     })
 
-    // Restatement citations that currently don't parse
-    // These are skipped because restatement citation support is not yet implemented
-    test.skip('should find Restatement (Second) of Contracts citation', () => {
+    // Restatement citations
+    test('should find Restatement (Second) of Contracts citation', () => {
       assertCitations('Restatement (Second) of Contracts § 90 (1981)', [
         {
           type: FullLawCitation,
@@ -1303,7 +1302,7 @@ describe('Find Citations', () => {
       ])
     })
 
-    test.skip('should find Restatement (Third) of Torts citation with multiple sections', () => {
+    test('should find Restatement (Third) of Torts citation with multiple sections', () => {
       assertCitations('Restatement (Third) of Torts §§ 1-8 (2010)', [
         {
           type: FullLawCitation,
@@ -2567,7 +2566,7 @@ describe('Find Citations', () => {
         },
         {
           text: "Corp. v. Nature's Farm Prods., No. 99 Civ. 9404 (SHS), 2000 U.S. Dist. LEXIS 12335 (S.D.N.Y. Aug. 25, 2000)",
-          expectedStart: 5, // starts after "Corp." because it's not recognized as part of case name
+          expectedStart: 6, // starts at "v." when "Corp." is not recognized as a valid plaintiff
           expectedEnd: 107, // String length is 107
         },
         {
