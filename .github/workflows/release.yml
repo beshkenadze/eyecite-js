@@ -44,15 +44,16 @@ jobs:
       run: |
         VERSION="${{ steps.get_version.outputs.version }}"
         if [[ $VERSION =~ -alpha ]]; then
-          echo "tag=alpha" >> $GITHUB_OUTPUT
+          TAG="alpha"
         elif [[ $VERSION =~ -beta ]]; then
-          echo "tag=beta" >> $GITHUB_OUTPUT
+          TAG="beta"
         elif [[ $VERSION =~ -rc ]]; then
-          echo "tag=rc" >> $GITHUB_OUTPUT
+          TAG="rc"
         else
-          echo "tag=latest" >> $GITHUB_OUTPUT
+          TAG="latest"
         fi
-        echo "NPM tag: $(cat $GITHUB_OUTPUT | grep tag=)"
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "NPM tag: $TAG"
     
     - name: Setup Node.js for npm publishing
       uses: actions/setup-node@v4
@@ -80,44 +81,39 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
+      if: github.ref_type == 'tag'
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.get_version.outputs.version }}
+        name: Release ${{ steps.get_version.outputs.version }}
         body: |
           ## Changes in ${{ steps.get_version.outputs.version }}
           
           ### Features
-          - Support for multiple law citations with §§ pattern
-          - Comprehensive citation extraction and parsing
-          - Built-in text cleaning utilities
-          - Citation annotation and resolution
+          - Enhanced TypeScript citation parsing with comprehensive fixes
+          - Parallel citation support for historical U.S. Reports (e.g., "5 U.S. (1 Cranch) 137")
+          - Enhanced CFR and USC citation parsing with proper section extraction
+          - Improved state statute citation recognition
+          - Fixed DOM handling and TypeScript compilation errors
           
           ### Installation
           
           **From npm:**
           ```bash
-          npm install @beshkenadze/eyecite-js@${{ steps.npm_tag.outputs.tag }}
+          npm install @beshkenadze/eyecite-js@${{ steps.get_version.outputs.version }}
           ```
           
           **From GitHub Packages:**
           ```bash
-          npm install @beshkenadze/eyecite-js@${{ steps.npm_tag.outputs.tag }} --registry=https://npm.pkg.github.com
+          npm install @beshkenadze/eyecite-js@${{ steps.get_version.outputs.version }} --registry=https://npm.pkg.github.com
           ```
           
           ### Documentation
           See the [README](https://github.com/beshkenadze/eyecite-js#readme) for usage examples and API documentation.
         draft: false
         prerelease: ${{ steps.npm_tag.outputs.tag != 'latest' }}
-    
-    - name: Upload build artifacts to release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/index.js
-        asset_name: eyecite-js-${{ steps.get_version.outputs.version }}.js
-        asset_content_type: application/javascript
+        files: |
+          dist/index.js
+          dist/index.cjs
+          dist/index.d.ts
+          package.json
+          README.md
