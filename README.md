@@ -1,6 +1,7 @@
 # eyecite-js
 
-[![npm version](https://badge.fury.io/js/@beshkenadze/eyecite-js.svg)](https://badge.fury.io/js/@beshkenadze/eyecite-js)
+[![npm version](https://badge.fury.io/js/@beshkenadze%2Feyecite-js.svg)](https://badge.fury.io/js/@beshkenadze%2Feyecite-js)
+[![CI](https://github.com/beshkenadze/eyecite-js/actions/workflows/ci.yml/badge.svg)](https://github.com/beshkenadze/eyecite-js/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 A TypeScript/JavaScript port of the Python [eyecite](https://github.com/freelawproject/eyecite) library for extracting legal citations from text strings.
