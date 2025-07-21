@@ -743,10 +743,12 @@ function scanForCaseBoundaries(document: Document, citation: CaseCitation, state
   const words = document.words
   const backSeek = citation.index - BACKWARD_SEEK
 
+
   for (let index = citation.index - 1; index > Math.max(backSeek, -1); index--) {
     const word = words[index]
     const wordStr = String(word)
     state.offset += wordStr.length
+
 
     // Skip commas
     if (wordStr === ',') {
@@ -825,7 +827,8 @@ function scanForCaseBoundaries(document: Document, citation: CaseCitation, state
 
     // Break on lowercase word w/o "v" token
     if (isLowercaseWithoutVToken(wordStr, state.vToken)) {
-      if (['ex', 'rel.'].includes(wordStr)) {
+      // Common lowercase words that appear in case names - continue scanning
+      if (['ex', 'rel.', 'for', 'of', 'the', 'and', 'in', 'on', 'to', 'at', 'by'].includes(wordStr)) {
         continue
       }
       if (word instanceof SupraCitation) {
@@ -869,6 +872,7 @@ function processCaseName(
 ): void {
   const words = document.words
 
+
   // If we have a v token, extract plaintiff and defendant separately
   if (state.vToken && state.vTokenIndex !== undefined) {
     // Extract plaintiff - text before v token
@@ -879,9 +883,14 @@ function processCaseName(
     for (let i = state.vTokenIndex - 1; i >= plaintiffStart; i--) {
       const word = words[i]
       const wordStr = String(word).trim()
-      // Stop at punctuation or special tokens
+      
+      // Check if it's a common abbreviation that shouldn't break the scan
+      const isCommonAbbreviation = wordStr.match(/^(Bd|Co|Inc|Corp|Ltd|Educ|Pub|Dist|Cnty|Twp|Sch|Hosp|Auth|Dept|Div|Ass'n|Assn|Comm'n|Commn|Univ|Coll|Inst|Soc'y|Socy|Nat'l|Natl|Int'l|Intl|Fed|Am|U\.S|N\.Y|Cal|Tex|Fla|Pa|Ill|Ohio|Mich|N\.J)\.$/)
+      
+      // Stop at punctuation or special tokens (but not abbreviations)
       if (
         wordStr &&
+        !isCommonAbbreviation &&
         (wordStr.match(/[;,.]$/) || // ends with punctuation
           word instanceof CitationToken ||
           word instanceof StopWordToken)
@@ -899,9 +908,11 @@ function processCaseName(
     // Extract plaintiff text, skipping leading lowercase words
     const plaintiffWords = []
     let foundCapitalized = false
+    
     for (let i = plaintiffStart; i < plaintiffEnd; i++) {
       const word = words[i]
       const wordStr = String(word).trim()
+
 
       // Skip leading lowercase words like "bob" before "Lissner"
       if (!foundCapitalized && wordStr && wordStr[0] && wordStr[0].match(/[a-z]/)) {
@@ -957,11 +968,11 @@ function processCaseName(
     }
     const defendantText = defendantWords.join('').trim().replace(/[,]+$/, '')
 
-    // Clean and set names
-    if (plaintiffText) {
+    // Clean and set names (only if not already set)
+    if (plaintiffText && !citation.metadata.plaintiff) {
       citation.metadata.plaintiff = stripStopWords(plaintiffText)
     }
-    if (defendantText) {
+    if (defendantText && !citation.metadata.defendant) {
       citation.metadata.defendant = stripStopWords(defendantText)
     }
 
@@ -1022,6 +1033,20 @@ function isLowercaseAfterVToken(wordStr: string, vToken: any): boolean {
 }
 
 function isCapitalizedAbbreviation(wordStr: string, vToken: any, plaintiffLength: number): boolean {
+  // Common legal abbreviations that should NOT break case name scanning
+  const commonLegalAbbreviations = [
+    'Bd.', 'Co.', 'Inc.', 'Corp.', 'Ltd.', 'Ass\'n', 'Assn.', 'Pub.', 'Educ.',
+    'Dept.', 'Div.', 'Dist.', 'Cnty.', 'Twp.', 'Sch.', 'Hosp.', 'Auth.',
+    'Comm\'n', 'Commn.', 'Univ.', 'Coll.', 'Inst.', 'Soc\'y', 'Socy.',
+    'Nat\'l', 'Natl.', 'Int\'l', 'Intl.', 'Fed.', 'Am.', 'U.S.', 'N.Y.',
+    'Cal.', 'Tex.', 'Fla.', 'Pa.', 'Ill.', 'Ohio', 'Mich.', 'N.J.'
+  ];
+  
+  // If it's a common legal abbreviation, don't break
+  if (commonLegalAbbreviations.includes(wordStr)) {
+    return false;
+  }
+  
   return (
     vToken !== null &&
     wordStr[0].match(/[A-Z]/) &&
@@ -1141,22 +1166,33 @@ function extractPlaintiffDefendantFromVersus(
 
   if (plaintiffTags.length !== 1 || defendantTags.length !== 1) {
     // Fall back to plain text extraction
-    // Extract plaintiff - up to 5 words before 'v'
-    const beforeV = words.slice(Math.max(0, index - 5), index).join('')
+    // Extract plaintiff - up to 10 words before 'v'
+    const plaintiffStartIdx = Math.max(0, index - 10)
+    const plaintiffWords = words.slice(plaintiffStartIdx, index)
+    const beforeV = plaintiffWords.join('').trim()
 
     // Extract defendant - words after 'v' but stop at citation
     let defendantEndIndex = Math.min(words.length, index + 6)
-    for (let i = index + 1; i < defendantEndIndex; i++) {
+    
+    // Skip the period after 'v'
+    let defendantStartIdx = index + 1
+    while (defendantStartIdx < defendantEndIndex && 
+           (String(words[defendantStartIdx]).trim() === '.' || 
+            String(words[defendantStartIdx]).trim() === '')) {
+      defendantStartIdx++
+    }
+    
+    for (let i = defendantStartIdx; i < defendantEndIndex; i++) {
       if (words[i] instanceof CitationToken) {
         defendantEndIndex = i
         break
       }
     }
-    const afterV = words.slice(index + 1, defendantEndIndex).join('')
+    const afterV = words.slice(defendantStartIdx, defendantEndIndex).join('').trim()
 
     if (beforeV && afterV) {
-      citation.metadata.plaintiff = stripStopWords(beforeV.trim())
-      citation.metadata.defendant = stripStopWords(afterV.trim())
+      citation.metadata.plaintiff = stripStopWords(beforeV)
+      citation.metadata.defendant = stripStopWords(afterV)
 
       // Set fullSpanStart based on the position before the 'v' token
       const startIndex = Math.max(0, index - 5)
