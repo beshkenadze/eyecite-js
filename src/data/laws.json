@@ -6422,5 +6422,133 @@
             "start": null,
             "variations": []
         }
+    ],
+    "Restatement (Second) of Contracts": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement (Second) of Contracts § 90 (1981)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement (Second) of Contracts",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement (Third) of Torts": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement (Third) of Torts §§ 1-8 (2010)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement (Third) of Torts",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement of Contracts": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement of Contracts § 90 (1932)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement of Contracts",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement of Torts": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement of Torts § 90 (1934)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement of Torts",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement (Second) of Torts": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement (Second) of Torts § 402A (1965)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement (Second) of Torts",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement (Third) of Property": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement (Third) of Property § 2.1 (2000)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement (Third) of Property",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement (Second) of Agency": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement (Second) of Agency § 1 (1958)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement (Second) of Agency",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
+    ],
+    "Restatement (Third) of Agency": [
+        {
+            "cite_type": "restatement",
+            "end": null,
+            "examples": [
+                "Restatement (Third) of Agency § 1.01 (2006)"
+            ],
+            "jurisdiction": "United States",
+            "name": "Restatement (Third) of Agency",
+            "regexes": [
+                "$reporter §§? $law_section \\((?P<year>\\d{4})\\)"
+            ],
+            "start": null,
+            "variations": []
+        }
     ]
 }
