@@ -1,6 +1,6 @@
 # eyecite-js
 
-[![npm version](https://badge.fury.io/js/@beshkenadze%2Feyecite-js.svg)](https://badge.fury.io/js/@beshkenadze%2Feyecite-js)
+[![npm version](https://badge.fury.io/js/@beshkenadze%2Feyecite.svg)](https://badge.fury.io/js/@beshkenadze%2Feyecite)
 [![CI](https://github.com/beshkenadze/eyecite-js/actions/workflows/ci.yml/badge.svg)](https://github.com/beshkenadze/eyecite-js/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
@@ -21,22 +21,22 @@ eyecite-js is a complete port that recognizes the same wide variety of citations
 
 **Bun** (recommended):
 ```bash
-bun add @beshkenadze/eyecite-js
+bun add @beshkenadze/eyecite
 ```
 
 **npm**:
 ```bash
-npm install @beshkenadze/eyecite-js
+npm install @beshkenadze/eyecite
 ```
 
 **pnpm**:
 ```bash
-pnpm add @beshkenadze/eyecite-js
+pnpm add @beshkenadze/eyecite
 ```
 
 **Yarn**:
 ```bash
-yarn add @beshkenadze/eyecite-js
+yarn add @beshkenadze/eyecite
 ```
 
 ### Registries
@@ -44,13 +44,13 @@ yarn add @beshkenadze/eyecite-js
 **npm Registry** (default):
 ```bash
 # Latest stable version
-npm install @beshkenadze/eyecite-js
+npm install @beshkenadze/eyecite
 
 # Alpha version
-npm install @beshkenadze/eyecite-js@alpha
+npm install @beshkenadze/eyecite@alpha
 
 # Beta version  
-npm install @beshkenadze/eyecite-js@beta
+npm install @beshkenadze/eyecite@beta
 ```
 
 **GitHub Packages**:
@@ -59,16 +59,16 @@ npm install @beshkenadze/eyecite-js@beta
 npm config set @beshkenadze:registry https://npm.pkg.github.com
 
 # Install from GitHub Packages
-npm install @beshkenadze/eyecite-js
+npm install @beshkenadze/eyecite
 
 # Or install directly
-npm install @beshkenadze/eyecite-js --registry=https://npm.pkg.github.com
+npm install @beshkenadze/eyecite --registry=https://npm.pkg.github.com
 ```
 
 ## Quick Start
 
 ```typescript
-import { getCitations } from '@beshkenadze/eyecite-js'
+import { getCitations } from '@beshkenadze/eyecite'
 
 const text = `
   Mass. Gen. Laws ch. 1, § 2 (West 1999) (barring ...).
@@ -108,7 +108,7 @@ const citations = getCitations(text)
 Built-in text cleaning utilities:
 
 ```typescript
-import { cleanText } from '@beshkenadze/eyecite-js'
+import { cleanText } from '@beshkenadze/eyecite'
 
 const dirtyText = '<p>foo   1  U.S.  1   </p>'
 const cleanedText = cleanText(dirtyText, ['html', 'inline_whitespace'])
@@ -120,7 +120,7 @@ const citations = getCitations(cleanedText)
 Add markup around citations in text:
 
 ```typescript
-import { annotateCitations } from '@beshkenadze/eyecite-js'
+import { annotateCitations } from '@beshkenadze/eyecite'
 
 const text = 'bob lissner v. test 1 U.S. 12, 347-348 (4th Cir. 1982)'
 const citations = getCitations(text)
@@ -136,7 +136,7 @@ const annotated = annotateCitations(
 Resolve citations to their common references:
 
 ```typescript
-import { resolveCitations } from '@beshkenadze/eyecite-js'
+import { resolveCitations } from '@beshkenadze/eyecite'
 
 const text = 'first citation: 1 U.S. 12. second citation: 2 F.3d 2. third citation: Id.'
 const citations = getCitations(text)
@@ -174,7 +174,7 @@ Each citation object contains:
 eyecite-js is written in TypeScript and includes complete type definitions:
 
 ```typescript
-import { getCitations, FullCaseCitation, FullLawCitation } from '@beshkenadze/eyecite-js'
+import { getCitations, FullCaseCitation, FullLawCitation } from '@beshkenadze/eyecite'
 
 const citations = getCitations(text)
 citations.forEach(citation => {
