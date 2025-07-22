@@ -12,6 +12,8 @@ import type { CaseCitation, CitationBase, Document, FullCitation, Tokens } from 
 import {
   CaseReferenceToken,
   CitationToken,
+  DOLOpinionCitation,
+  DOLOpinionToken,
   FullCaseCitation,
   FullJournalCitation,
   FullLawCitation,
@@ -153,7 +155,11 @@ export function getCitations(
     else if (token instanceof SectionToken) {
       citation = new UnknownCitation(token, i)
     }
-    // CASE 7: Not a citation
+    // CASE 7: Token is a DOLOpinionToken
+    else if (token instanceof DOLOpinionToken) {
+      citation = new DOLOpinionCitation(token, i)
+    }
+    // CASE 8: Not a citation
     else {
       continue
     }

@@ -67,6 +67,10 @@
         "#": "Standard reporter"
     },
     "section_marker": "((§§?)|([Ss]((ec)(tion)?)?s?\\.?))",
+    "dol_opinion": {
+        "": "DOL Opinion Letter (?P<subject>\\w+) (?P<year>\\d{4})-(?P<number>\\d+) \\((?P<date>$law_month $law_day, $law_year)\\)",
+        "#": "DOL Opinion Letter format, like 'DOL Opinion Letter FLSA 2009-19 (Jan. 16, 2009)'"
+    },
     "volume": {
         "": "(?P<volume>\\d+)",
         "#": "Standard volume number",

@@ -315,3 +315,17 @@ export class JournalCitationToken extends Token {
     return new JournalCitationToken(matchText, start, end, groups, extra)
   }
 }
+
+export class DOLOpinionToken extends Token {
+  static fromMatch(match: RegExpExecArray, _extra: Record<string, unknown>, offset = 0): Token {
+    // For DOL Opinion citations, use the full match
+    const matchText = match[0]
+    const start = (match.index || 0) + offset
+    const end = start + matchText.length
+
+    // Extract named groups
+    const groups = match.groups || {}
+
+    return new DOLOpinionToken(matchText, start, end, groups)
+  }
+}
