@@ -168,22 +168,7 @@ export const MONTH_REGEX = `
 `.replace(/\s+/g, ' ')
 
 // Month regex without named group (for embedding)
-export const MONTH_REGEX_INNER = `
-    (?:
-        January|Jan\\.|
-        February|Feb\\.|
-        March|Mar\\.|
-        April|Apr\\.|
-        May|
-        June|Jun\\.|
-        July|Jul\\.|
-        August|Aug\\.|
-        September|Sept?\\.|
-        October|Oct\\.|
-        November|Nov\\.|
-        December|Dec\\.
-    )
-`.replace(/\s+/g, ' ')
+export const MONTH_REGEX_INNER = `(?:January|Jan\\.|February|Feb\\.|March|Mar\\.|April|Apr\\.|May|June|Jun\\.|July|Jul\\.|August|Aug\\.|September|Sept?\\.|October|Oct\\.|November|Nov\\.|December|Dec\\.)`
 
 // Year regex with named group
 export const YEAR_REGEX = `
@@ -196,6 +181,9 @@ export const YEAR_REGEX = `
         (?:-\\d{2})?
     )
 `.replace(/\s+/g, ' ')
+
+// DOL Opinion Letter regex
+export const DOL_OPINION_REGEX = `DOL Opinion Letter (?<subject>\\w+) (?<year>\\d{4})-(?<number>\\d{1,2}) \\((?<date>${MONTH_REGEX_INNER} \\d{1,2}, \\d{4})\\)`
 
 // Year regex without named group (for embedding)
 export const YEAR_REGEX_INNER = `

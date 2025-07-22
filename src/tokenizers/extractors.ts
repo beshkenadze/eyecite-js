@@ -1,5 +1,6 @@
 import {
   CitationToken,
+  DOLOpinionToken,
   type Edition,
   IdToken,
   JournalCitationToken,
@@ -11,6 +12,7 @@ import {
   SupraToken,
 } from '../models'
 import {
+  DOL_OPINION_REGEX,
   ID_REGEX,
   nonalphanumBoundariesRe,
   PARAGRAPH_REGEX,
@@ -73,6 +75,9 @@ export function createSpecialExtractors(): BaseTokenExtractor[] {
 
     // Section token extractor
     new BaseTokenExtractor(SECTION_REGEX, SectionToken, {}, 0, ['§']),
+
+    // DOL Opinion Letter token extractor
+    new BaseTokenExtractor(DOL_OPINION_REGEX, DOLOpinionToken),
   ]
 }
 

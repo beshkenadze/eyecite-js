@@ -366,3 +366,48 @@ export class UnknownCitation extends CitationBase {
     return `unique-${Date.now()}-${Math.random()}`
   }
 }
+
+export class DOLOpinionCitation extends CitationBase {
+  get subject(): string {
+    return this.groups.subject || ''
+  }
+
+  get year(): string {
+    return this.groups.year || ''
+  }
+
+  get number(): string {
+    return this.groups.number || ''
+  }
+
+  get date(): string {
+    return this.groups.date || ''
+  }
+
+  hash(): string {
+    return hashSha256({
+      subject: this.subject,
+      year: this.year,
+      number: this.number,
+      class: this.constructor.name,
+    })
+  }
+
+  correctedCitationFull(): string {
+    const parts = [`DOL Opinion Letter ${this.subject} ${this.year}-${this.number}`]
+    
+    if (this.date) {
+      parts.push(` (${this.date})`)
+    }
+
+    if (this.metadata.pinCite) {
+      parts.push(`, ${this.metadata.pinCite}`)
+    }
+
+    if (this.metadata.parenthetical) {
+      parts.push(` (${this.metadata.parenthetical})`)
+    }
+
+    return parts.join('')
+  }
+}
