@@ -14,6 +14,7 @@ export {
   CaseCitation,
   CitationBase,
   CitationToken,
+  DOLOpinionCitation,
   FullCaseCitation,
   FullJournalCitation,
   FullLawCitation,
