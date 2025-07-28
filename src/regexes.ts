@@ -72,7 +72,7 @@ export const PAGE_NUMBER_REGEX = `(?:\\d+(?:-[A-Z])?|${ROMAN_NUMERAL_REGEX}|_+)`
 export const PUNCTUATION_REGEX = '[^\\sa-zA-Z0-9]*'
 
 // Id token regex
-export const ID_REGEX = spaceBoundariesRe('(id\\.,?|ibid\\.)')
+export const ID_REGEX = spaceBoundariesRe('(id\\.[,;:]?|ibid\\.)')
 
 // Supra token regex
 export const SUPRA_REGEX = spaceBoundariesRe(stripPunctuationRe('supra'))
