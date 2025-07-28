@@ -16,17 +16,33 @@ export {
   CitationToken,
   DOLOpinionCitation,
   FullCaseCitation,
+  FullCitation,
   FullJournalCitation,
   FullLawCitation,
   IdCitation,
-  type IdToken,
+  IdToken,
+  Metadata,
   ReferenceCitation,
   ResourceCitation,
   ShortCaseCitation,
-  type StopWordToken,
+  StopWordToken,
   SupraCitation,
-  type SupraToken,
+  SupraToken,
   UnknownCitation,
+  // Base types
+  type Document,
+  type Groups,
+  type Span,
+  type Token,
+  type TokenOrStr,
+  type Tokens,
+  type ResourceType,
+  // Token classes
+  SectionToken,
+  ParagraphToken,
+  // Reporter types
+  type Edition,
+  type ReporterInterface,
 } from './models'
 export { resolveCitations, resolveFullCitation } from './resolve'
 // Utilities
