@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/beshkenadze/eyecite-js/discussions
+    about: For general discussions and help from the community
+  - name: Original Python eyecite
+    url: https://github.com/freelawproject/eyecite
+    about: For issues related to the original Python implementation
