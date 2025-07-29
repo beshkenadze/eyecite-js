@@ -349,6 +349,42 @@ export class IdCitation extends CitationBase {
   }
 }
 
+export class IdLawCitation extends CitationBase {
+  get section(): string {
+    return this.groups.section || ''
+  }
+
+  get sectionMarker(): string {
+    return this.groups.section_marker || ''
+  }
+
+  hash(): string {
+    return hashSha256({
+      section: this.section,
+      sectionMarker: this.sectionMarker,
+      class: this.constructor.name,
+    })
+  }
+
+  formatted(): string {
+    const parts = ['Id.']
+    if (this.sectionMarker) {
+      parts.push(` ${this.sectionMarker}`)
+    }
+    if (this.section) {
+      parts.push(` ${this.section}`)
+    }
+    if (this.metadata.parenthetical) {
+      parts.push(` (${this.metadata.parenthetical})`)
+    }
+    return parts.join('')
+  }
+
+  correctedCitation(): string {
+    return this.formatted()
+  }
+}
+
 export class ReferenceCitation extends CitationBase {
   static nameFields = ['plaintiff', 'defendant', 'resolvedCaseNameShort', 'resolvedCaseName']
 

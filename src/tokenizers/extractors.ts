@@ -2,6 +2,7 @@ import {
   CitationToken,
   DOLOpinionToken,
   type Edition,
+  IdLawToken,
   IdToken,
   JournalCitationToken,
   LawCitationToken,
@@ -13,6 +14,8 @@ import {
 } from '../models'
 import {
   DOL_OPINION_REGEX,
+  ID_AT_PAGE_REGEX,
+  ID_LAW_REGEX,
   ID_REGEX,
   nonalphanumBoundariesRe,
   PARAGRAPH_REGEX,
@@ -58,6 +61,12 @@ export function tokenIsFromNominativeReporter(token: any): boolean {
 // Create extractors for special token types
 export function createSpecialExtractors(): BaseTokenExtractor[] {
   return [
+    // Id law token extractor - must come before regular Id token
+    new BaseTokenExtractor(ID_LAW_REGEX, IdLawToken, {}, 2), // re.I = 2
+
+    // Id at page token extractor - also before regular Id token
+    new BaseTokenExtractor(ID_AT_PAGE_REGEX, IdToken, {}, 2), // re.I = 2
+
     // Id token extractor
     new BaseTokenExtractor(ID_REGEX, IdToken, {}, 2, ['id.', 'ibid.']), // re.I = 2
 

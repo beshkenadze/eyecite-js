@@ -145,6 +145,31 @@ export class IdToken extends Token {
   }
 }
 
+export class IdLawToken extends Token {
+  static fromMatch(match: RegExpExecArray, _extra: Record<string, unknown>, offset = 0): IdLawToken {
+    // Get the captured id law citation (group 1)
+    const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
+    const matchText = match[captureIndex]
+
+    // Calculate start position based on the full match
+    let start = (match.index || 0) + offset
+    if (captureIndex > 0 && match[0]) {
+      // Find where the capture starts within the full match
+      const captureOffset = match[0].indexOf(match[captureIndex])
+      if (captureOffset > 0) {
+        start += captureOffset
+      }
+    }
+
+    const end = start + matchText.length
+
+    // Extract named groups
+    const groups = match.groups || {}
+
+    return new IdLawToken(matchText, start, end, groups)
+  }
+}
+
 export class ParagraphToken extends Token {
   static fromMatch(
     match: RegExpExecArray,

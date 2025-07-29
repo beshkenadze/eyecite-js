@@ -20,6 +20,8 @@ export {
   FullJournalCitation,
   FullLawCitation,
   IdCitation,
+  IdLawCitation,
+  IdLawToken,
   IdToken,
   Metadata,
   ReferenceCitation,
@@ -44,7 +46,7 @@ export {
   type Edition,
   type ReporterInterface,
 } from './models'
-export { resolveCitations, resolveFullCitation } from './resolve'
+export { resolveCitations, resolveFullCitation, resolveCitationsWithIdSubstitution } from './resolve'
 // Utilities
 export { bisectLeft, bisectRight, SpanUpdater } from './span-updater'
 // Tokenizers
