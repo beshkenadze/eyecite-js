@@ -1,7 +1,7 @@
 // Helper functions for building regexes
 
 export function spaceBoundariesRe(regex: string): string {
-  return `(?:^|\\s)${regex}(?=\\s|$)`
+  return `(?:^|\\s)${regex}(?=\\s|[.,;:!?)\\]\\}]|$)`
 }
 
 export function stripPunctuationRe(regex: string): string {
@@ -76,7 +76,7 @@ export const ID_REGEX = spaceBoundariesRe('(id\\.[,;:]?|ibid\\.)')
 
 // Id law citation regex - for patterns like "Id. § 123" or "Id. §§ 123-456"
 // This captures the section pattern from laws (e.g., 778.114(a)(5))
-export const ID_LAW_REGEX = spaceBoundariesRe(`id\\.\\s*(?<section_marker>§§?|[Ss]ec(?:tion)?s?\\.?)\\s*(?<section>(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\([a-zA-Z]|\\d{1,2}\\))+))(?:\\s*[-–—]\\s*(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\([a-zA-Z]|\\d{1,2}\\))+))?`)
+export const ID_LAW_REGEX = spaceBoundariesRe(`id\\.\\s*(?<section_marker>§§?|[Ss]ec(?:tion)?s?\\.?)\\s*(?<section>\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\s*[-–—]\\s*\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?)?)`)
 
 // Id at page regex - for patterns like "Id. at 123"
 export const ID_AT_PAGE_REGEX = spaceBoundariesRe('id\\.\\s*at\\s*(?<page>\\d+(?:\\s*[-–—]\\s*\\d+)?)')

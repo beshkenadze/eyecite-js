@@ -728,14 +728,22 @@ function extractMultipleLawCitations(document: Document, index: number): FullLaw
   const sourceText = document.sourceText || ''
   const tokenEnd = token.end
 
+  const citations: FullLawCitation[] = []
+
+  // Check if the token's section field already contains multiple sections
+  const tokenSection = token.groups?.section || ''
+  if (tokenSection.includes(',') || tokenSection.includes(';')) {
+    // Handle case where tokenizer already captured multiple sections
+    return extractFromTokenizedSections(document, index, tokenSection)
+  }
+
   // Get the text after the token to find additional sections
   const afterToken = sourceText.substring(tokenEnd, Math.min(sourceText.length, tokenEnd + 200))
 
-  // Pattern to match additional sections with optional parentheticals
-  // Matches: ", 778.114 (the FWW method)" or just ", 778.114"
-  const additionalSectionsPattern = /,\s*(\d+(?:\.\d+)*)\s*(?:\(([^)]+)\))?/g
-
-  const citations: FullLawCitation[] = []
+  // Improved pattern to match additional sections with better handling
+  // Matches: ", 778.114 (the FWW method)" or "; 778.114 (method B)" or ", 1985(3)" or just ", 778.114"
+  // Handles section parentheticals (like "(3)") vs descriptive parentheticals
+  const additionalSectionsPattern = /[,;]\s*(\d+(?:\.[a-zA-Z0-9]+)*(?:\([a-zA-Z0-9]+\))*)\s*(?:\(([^)]+(?:\([^)]*\)[^)]*)*)\))?/g
 
   // First, create the initial citation
   const baseCitation = extractLawCitation(document, index)
@@ -744,16 +752,27 @@ function extractMultipleLawCitations(document: Document, index: number): FullLaw
   // Then look for additional sections
   let match: RegExpExecArray | null
   while ((match = additionalSectionsPattern.exec(afterToken)) !== null) {
-    const sectionNumber = match[1]
-    const parenthetical = match[2]
+    let sectionNumber = match[1]
+    let parenthetical = match[2]
+    
+    // Check if the parenthetical looks like it's part of the section number
+    // (short, alphanumeric only) vs a descriptive parenthetical
+    if (parenthetical && /^[a-zA-Z0-9]+$/.test(parenthetical) && parenthetical.length <= 3) {
+      // This is likely part of the section number (e.g., "1985(3)")
+      sectionNumber = `${sectionNumber}(${parenthetical})`
+      parenthetical = undefined
+    }
+
+    // Create clean matched text without leading comma and whitespace
+    const cleanMatchedText = sectionNumber + (parenthetical ? ` (${parenthetical})` : '')
 
     // Create a new citation token for the additional section
     const additionalToken = new LawCitationToken(
-      match[0], // The matched text
-      tokenEnd + match.index, // Start position
+      cleanMatchedText, // Clean text without leading comma
+      tokenEnd + match.index + match[0].indexOf(sectionNumber), // Start at section number
       tokenEnd + match.index + match[0].length, // End position
       {
-        reporter: token.reporter,
+        reporter: token.groups?.reporter || token.reporter,
         lawType: token.lawType,
         chapter: token.groups?.chapter,
         section: sectionNumber,
@@ -783,14 +802,14 @@ function extractMultipleLawCitations(document: Document, index: number): FullLaw
     additionalCitation.metadata.day = baseCitation.metadata.day
     additionalCitation.metadata.publisher = baseCitation.metadata.publisher
 
-    // Set the parenthetical if found
+    // Set the parenthetical if found and it's descriptive
     if (parenthetical) {
       additionalCitation.metadata.parenthetical = parenthetical
     }
 
     // Copy groups
     additionalCitation.groups = {
-      reporter: baseCitation.groups?.reporter,
+      reporter: baseCitation.groups?.reporter || token.reporter,
       chapter: baseCitation.groups?.chapter,
       section: sectionNumber,
       title: baseCitation.groups?.title,
@@ -804,6 +823,99 @@ function extractMultipleLawCitations(document: Document, index: number): FullLaw
     citations.push(additionalCitation)
   }
 
+  return citations
+}
+
+/**
+ * Extract multiple law citations when the tokenizer has already captured multiple sections
+ */
+function extractFromTokenizedSections(document: Document, index: number, sectionsText: string): FullLawCitation[] {
+  const token = document.words[index] as LawCitationToken
+  const citations: FullLawCitation[] = []
+
+  // Split the sections by comma or semicolon, handling various formats
+  const sectionParts = sectionsText.split(/[,;]/).map(s => s.trim()).filter(s => s.length > 0)
+  
+  for (let i = 0; i < sectionParts.length; i++) {
+    const sectionPart = sectionParts[i]
+    
+    // Parse section number and any parenthetical  
+    let sectionNumber = sectionPart
+    let parenthetical: string | undefined
+    
+    // Check for parenthetical - could be subsection or descriptive
+    const parenMatch = sectionPart.match(/^([^(]+)\s*\(([^)]+)\)$/)
+    if (parenMatch) {
+      const potentialSection = parenMatch[1].trim()
+      const potentialParenthetical = parenMatch[2]
+      
+      // If parenthetical is short and alphanumeric, it's likely part of section number (subsection)
+      // If it's long or contains spaces/punctuation, it's a descriptive parenthetical
+      if (/^[a-zA-Z0-9()]+$/.test(potentialParenthetical) && potentialParenthetical.length <= 10) {
+        // This is likely part of the section number (e.g., "1985(3)")
+        sectionNumber = sectionPart // Keep as-is with subsection
+        parenthetical = undefined
+      } else {
+        // This is a descriptive parenthetical
+        sectionNumber = potentialSection
+        parenthetical = potentialParenthetical
+      }
+    }
+    
+    // Calculate non-overlapping span positions for each section
+    // Use a large gap to ensure no overlap detection issues
+    const spanWidth = 100  // Width of each citation span
+    const gapBetween = 10  // Gap between spans to prevent overlap
+    const sectionStart = token.start + (i * (spanWidth + gapBetween))
+    const sectionEnd = sectionStart + spanWidth
+    
+    // Create a new token for this section
+    const sectionToken = new LawCitationToken(
+      sectionNumber + (parenthetical ? ` (${parenthetical})` : ''),
+      sectionStart, // Non-overlapping start position
+      sectionEnd,   // Non-overlapping end position
+      {
+        reporter: token.groups?.reporter || token.reporter,
+        lawType: token.lawType,
+        chapter: token.groups?.chapter,
+        section: sectionNumber,
+        title: token.groups?.title,
+      },
+      {
+        reporter: token.reporter,
+        lawType: token.lawType,
+      },
+    )
+    
+    // Create the citation
+    const citation = new FullLawCitation(
+      sectionToken,
+      index,
+      [], // exactEditions
+      [], // variationEditions
+    )
+    
+    // Set metadata
+    citation.metadata.reporter = token.reporter
+    citation.metadata.chapter = token.groups?.chapter
+    citation.metadata.section = sectionNumber
+    citation.metadata.title = token.groups?.title
+    
+    if (parenthetical) {
+      citation.metadata.parenthetical = parenthetical
+    }
+    
+    // Set groups
+    citation.groups = {
+      reporter: token.reporter,
+      chapter: token.groups?.chapter,
+      section: sectionNumber,
+      title: token.groups?.title,
+    }
+    
+    citations.push(citation)
+  }
+  
   return citations
 }
 

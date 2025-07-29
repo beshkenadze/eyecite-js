@@ -75,16 +75,23 @@ export function getLawRegexVariables(): Record<string, string> {
 
   // Extract base variables from REGEXES
   if (REGEXES.law) {
-    // Process law section regex - handle multiple sections with §§
-    const _sectionRegex = pythonToJavaScriptRegex(
-      REGEXES.law.section ||
-        '(?P<section>(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\((?:[a-zA-Z]{1}|\\d{1,2})\\))+))',
+    // Enhanced law section regex - handle multiple sections with §§
+    // Priority order: multiple sections first, then ranges, then single sections
+    variables.law_section_multiple = pythonToJavaScriptRegex(
+      REGEXES.law.section_multiple ||
+        '(?P<section>(?:\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?(?:\\s*[-–—]\\s*\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?)?(?:\\s*,\\s*\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?(?:\\s*[-–—]\\s*\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?)?)*(?:\\s*\\([^)]*\\))?)+)'
     )
 
-    // Fix the section regex to handle simple numbers like "2"
-    // The original regex requires complex patterns, but we need to match simple sections too
-    // This regex captures the base section number but not subsections (which go in pinCite)
-    variables.law_section = pythonToJavaScriptRegex('(?P<section>\\d+(?:[\\-.:]\\d+)*)')
+    variables.law_section_range = pythonToJavaScriptRegex(
+      REGEXES.law.section_range ||
+        '(?P<section>\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?\\s*[-–—]\\s*\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?)'
+    )
+
+    // Enhanced single section regex to handle letter suffixes and parentheticals
+    variables.law_section = pythonToJavaScriptRegex(
+      REGEXES.law.section ||
+        '(?P<section>\\d+(?:[\\-.:]\\d+)*(?:[a-zA-Z]+)?(?:\\([^)]*\\))?)'
+    )
 
     // Other law variables
     variables.law_subject = pythonToJavaScriptRegex(
@@ -123,6 +130,13 @@ export function getLawRegexVariables(): Record<string, string> {
     variables.section_marker = '((§§?)|([Ss]((ec)(tion)?)?s?\\.?))'
   }
 
+  // Section marker specifically for multiple sections (§§)  
+  if (REGEXES.section_marker_multiple) {
+    variables.section_marker_multiple = REGEXES.section_marker_multiple
+  } else {
+    variables.section_marker_multiple = '((§§)|([Ss]((ec)(tion)?)?s\\.?))'
+  }
+
   // Full citation templates
   if (REGEXES.full_cite) {
     variables.full_cite = REGEXES.full_cite[''] || '$volume $reporter,? $page'
@@ -143,11 +157,25 @@ export function expandLawRegex(pattern: string, reporterName: string): string {
   // Add the reporter name as a variable - wrap in a named group to capture it
   variables.reporter = `(?<reporter>${reporterName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
 
-  // First, check if the pattern already has §§? (handles both single and double section symbols)
-  // If it does, don't do any preprocessing
+  // Detect if this pattern is intended for multiple sections based on §§? or §§
+  // Check for §§? first since it's more specific than §§
   let preprocessedPattern = pattern
-  if (!pattern.includes('§§?')) {
-    // Only replace hardcoded § with $section_marker if pattern doesn't already handle §§
+  const hasSectionRange = pattern.includes('§§?')
+  const hasDoubleSection = pattern.includes('§§') && !hasSectionRange
+
+  if (hasSectionRange) {
+    // Pattern uses §§? - replace with section_marker (which handles both § and §§)
+    // Use the most flexible section pattern
+    preprocessedPattern = pattern
+      .replace(/§§\?/g, '$section_marker')
+      .replace(/\$law_section/g, '$law_section')
+  } else if (hasDoubleSection) {
+    // Pattern explicitly uses §§ for multiple sections
+    preprocessedPattern = pattern
+      .replace(/§§/g, '$section_marker_multiple')
+      .replace(/\$law_section/g, '$law_section_multiple')
+  } else if (!pattern.includes('§§?')) {
+    // Standard processing for patterns without explicit section symbol handling
     preprocessedPattern = pattern
       .replace(/\[§\|([^\]]+)\]/g, '((§§?)|$1)') // Replace [§|s] with ((§§?)|s)
       .replace(/(?<!\[)§(?!\])/g, '$section_marker') // Replace other § not in brackets
