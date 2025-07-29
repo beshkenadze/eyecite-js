@@ -18,6 +18,8 @@ import {
   FullJournalCitation,
   FullLawCitation,
   IdCitation,
+  IdLawCitation,
+  IdLawToken,
   IdToken,
   JournalCitationToken,
   LawCitationToken,
@@ -143,23 +145,27 @@ export function getCitations(
     else if (token instanceof JournalCitationToken) {
       citation = extractJournalCitation(document, i)
     }
-    // CASE 4: Token is an Id citation
+    // CASE 4: Token is an IdLawToken
+    else if (token instanceof IdLawToken) {
+      citation = extractIdLawCitation(document.words, i)
+    }
+    // CASE 5: Token is an Id citation
     else if (token instanceof IdToken) {
       citation = extractIdCitation(document.words, i)
     }
-    // CASE 5: Token is a Supra citation
+    // CASE 6: Token is a Supra citation
     else if (token instanceof SupraToken) {
       citation = extractSupraCitation(document.words, i)
     }
-    // CASE 6: Token is a Section token
+    // CASE 7: Token is a Section token
     else if (token instanceof SectionToken) {
       citation = new UnknownCitation(token, i)
     }
-    // CASE 7: Token is a DOLOpinionToken
+    // CASE 8: Token is a DOLOpinionToken
     else if (token instanceof DOLOpinionToken) {
       citation = new DOLOpinionCitation(token, i)
     }
-    // CASE 8: Not a citation
+    // CASE 9: Not a citation
     else {
       continue
     }
@@ -596,6 +602,40 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
 }
 
 /**
+ * Extract an id law citation from the document
+ */
+function extractIdLawCitation(words: Tokens, index: number): IdLawCitation {
+  const idLawToken = words[index] as IdLawToken
+  let parenthetical: string | undefined
+  let spanEnd = idLawToken.end
+
+  // Build text after token
+  let afterText = ''
+  for (let i = index + 1; i < Math.min(words.length, index + 10); i++) {
+    afterText += String(words[i])
+  }
+
+  // Check for parenthetical
+  const parenMatch = afterText.match(/^\s*\(([^)]+)\)/)
+  if (parenMatch) {
+    parenthetical = parenMatch[1]
+    spanEnd = idLawToken.end + parenMatch[0].length
+  }
+
+  return new IdLawCitation(
+    idLawToken,
+    index,
+    {
+      parenthetical,
+    },
+    undefined, // spanStart
+    spanEnd, // spanEnd
+    idLawToken.start, // fullSpanStart
+    spanEnd, // fullSpanEnd
+  )
+}
+
+/**
  * Extract an id citation from the document
  */
 function extractIdCitation(words: Tokens, index: number): IdCitation {
@@ -611,8 +651,8 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
     afterText += String(words[i])
   }
 
-  // Match pin cite patterns - same as supra
-  const pinCiteMatch = afterText.match(/^\s*((?:at\s+)?\d+(?:[-–—]\d+)?(?:\s*[&,]\s*\d+(?:[-–—]\d+)?)*)/)
+  // Match pin cite patterns - including section references
+  const pinCiteMatch = afterText.match(/^\s*((?:§\s*[\d.]+(?:\([a-zA-Z0-9]+\))*(?:\(\d+\))*)|(?:at\s+)?\d+(?:[-–—]\d+)?(?:\s*[&,]\s*\d+(?:[-–—]\d+)?)*)/)
   if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
     spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + pinCiteMatch[0].length
@@ -634,6 +674,11 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
   }
 
   const idToken = words[index] as IdToken
+  
+  // Check if the token already has a page from ID_AT_PAGE_REGEX
+  if (idToken.groups.page && !pinCite) {
+    pinCite = `at ${idToken.groups.page}`
+  }
   
   return new IdCitation(
     idToken,

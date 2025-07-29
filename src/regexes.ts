@@ -74,6 +74,13 @@ export const PUNCTUATION_REGEX = '[^\\sa-zA-Z0-9]*'
 // Id token regex
 export const ID_REGEX = spaceBoundariesRe('(id\\.[,;:]?|ibid\\.)')
 
+// Id law citation regex - for patterns like "Id. § 123" or "Id. §§ 123-456"
+// This captures the section pattern from laws (e.g., 778.114(a)(5))
+export const ID_LAW_REGEX = spaceBoundariesRe(`id\\.\\s*(?<section_marker>§§?|[Ss]ec(?:tion)?s?\\.?)\\s*(?<section>(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\([a-zA-Z]|\\d{1,2}\\))+))(?:\\s*[-–—]\\s*(?:\\d+(?:[\\-.:]\\d+){,3})|(?:\\d+(?:\\([a-zA-Z]|\\d{1,2}\\))+))?`)
+
+// Id at page regex - for patterns like "Id. at 123"
+export const ID_AT_PAGE_REGEX = spaceBoundariesRe('id\\.\\s*at\\s*(?<page>\\d+(?:\\s*[-–—]\\s*\\d+)?)')
+
 // Supra token regex
 export const SUPRA_REGEX = spaceBoundariesRe(stripPunctuationRe('supra'))
 
