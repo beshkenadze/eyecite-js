@@ -145,7 +145,7 @@ export const PLACEHOLDER_CITATIONS = `([_—–-]+\\s(${COMMON_PLACEHOLDER_REPOR
 )})\\s[_—–-]+)`
 
 // Pin cite token regex
-export const PIN_CITE_TOKEN_REGEX = `(?:(?:(?:&\\ )?note|(?:&\\ )?nn?\\.?|(?:&\\ )?fn?\\.?|¶{1,2}|§{1,2}|\\*{1,4}|pg\\.?|pp?\\.?)\\ ?)?(?:\\d+:\\d+(?:-\\d+(?::\\d+)?)?|[*]?\\d+(?:-\\d+)?)`
+export const PIN_CITE_TOKEN_REGEX = `(?:(?:(?:&\\ )?note|(?:&\\ )?nn?\\.?|(?:&\\ )?fn?\\.?|¶{1,2}|§{1,2}|\\*{1,4}|pg\\.?|pp?\\.?)\\ ?)?(?:\\d+:\\d+(?:[-–—]\\d+(?::\\d+)?)?|[*]?\\d+(?:[-–—]\\d+)?)`
 
 export const PIN_CITE_REGEX = `(?<pinCite>,?\\ ?(?:at\\ )?${PIN_CITE_TOKEN_REGEX}(?:,\\ ?${PIN_CITE_TOKEN_REGEX})*(?=[,.;)\\]\\\\]|\\ ?[(\\[]|$))`
 
@@ -244,7 +244,7 @@ export const POST_FULL_CITATION_REGEX = `
                 (?<pinCite>
                     ,?\\ ?(?:at\\ )?
                     ${PIN_CITE_TOKEN_REGEX}
-                    (?:\\ ?-\\ ?${PIN_CITE_TOKEN_REGEX})?
+                    (?:\\ ?[-–—]\\ ?${PIN_CITE_TOKEN_REGEX})?
                 )
                 (?=
                     [,.;)\\]\\\\]|

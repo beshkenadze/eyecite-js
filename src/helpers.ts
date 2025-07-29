@@ -1570,7 +1570,7 @@ export function addPostCitation(citation: CaseCitation, words: Tokens): void {
       // Also handles second parenthetical like (1982) (overruling xyz)
       // First, try to extract just a pin cite if it's followed by a comma (parallel citation case)
       const pinCiteOnlyMatch = nextWords.match(
-        /^,\s*([0-9]+(?:-[0-9]+)?(?:\s*[&,]\s*[0-9]+(?:-[0-9]+)?)*),/,
+        /^,\s*([0-9]+(?:[-–—][0-9]+)?(?:\s*[&,]\s*[0-9]+(?:[-–—][0-9]+)?)*),/,
       )
       if (pinCiteOnlyMatch) {
         citation.metadata.pinCite = pinCiteOnlyMatch[1].trim()
@@ -1580,7 +1580,7 @@ export function addPostCitation(citation: CaseCitation, words: Tokens): void {
 
       // First try to match pin cite without parentheses (e.g., ", 41;" or ", 41")
       const pinCiteWithoutParenMatch = nextWords.match(
-        /^,\s*([0-9]+(?:-[0-9]+)?(?:\s*[&,]\s*[0-9]+(?:-[0-9]+)?)*)(?:[;.]|$)/,
+        /^,\s*([0-9]+(?:[-–—][0-9]+)?(?:\s*[&,]\s*[0-9]+(?:[-–—][0-9]+)?)*)(?:[;.]|$)/,
       )
       if (pinCiteWithoutParenMatch) {
         citation.metadata.pinCite = pinCiteWithoutParenMatch[1].trim()
@@ -1589,7 +1589,7 @@ export function addPostCitation(citation: CaseCitation, words: Tokens): void {
       }
 
       const simpleMatch = nextWords.match(
-        /^(?:,\s*([0-9]+(?:-[0-9]+)?(?:\s*[&,]\s*[0-9]+(?:-[0-9]+)?)*))?\s*\(([^)]+)\)/,
+        /^(?:,\s*([0-9]+(?:[-–—][0-9]+)?(?:\s*[&,]\s*[0-9]+(?:[-–—][0-9]+)?)*))?\s*\(([^)]+)\)/,
       )
       if (simpleMatch) {
         // Extract pin cite if present

@@ -397,7 +397,7 @@ function extractShortformCitation(document: Document, index: number): ShortCaseC
     }
 
     // Check if the page continues with a range (e.g., "20" followed by "-25")
-    const rangeMatch = afterText.match(/^-(\d+)/)
+    const rangeMatch = afterText.match(/^[-–—](\d+)/)
     if (rangeMatch) {
       // Update pin cite to include the full range
       pinCite = `${pinCite}-${rangeMatch[1]}`
@@ -505,7 +505,7 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
   }
 
   // Match pin cite patterns
-  const pinCiteMatch = afterText.match(/^,?\s*((?:at\s+)?\d+(?:-\d+)?(?:\s*[&,]\s*\d+(?:-\d+)?)*)/)
+  const pinCiteMatch = afterText.match(/^,?\s*((?:at\s+)?\d+(?:[-–—]\d+)?(?:\s*[&,]\s*\d+(?:[-–—]\d+)?)*)/)
   if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
     spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + pinCiteMatch[0].length
@@ -612,7 +612,7 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
   }
 
   // Match pin cite patterns - same as supra
-  const pinCiteMatch = afterText.match(/^\s*((?:at\s+)?\d+(?:-\d+)?(?:\s*[&,]\s*\d+(?:-\d+)?)*)/)
+  const pinCiteMatch = afterText.match(/^\s*((?:at\s+)?\d+(?:[-–—]\d+)?(?:\s*[&,]\s*\d+(?:[-–—]\d+)?)*)/)
   if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
     spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + pinCiteMatch[0].length
@@ -633,8 +633,10 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
     }
   }
 
+  const idToken = words[index] as IdToken
+  
   return new IdCitation(
-    words[index] as IdToken,
+    idToken,
     index,
     {
       pinCite,
@@ -642,6 +644,8 @@ function extractIdCitation(words: Tokens, index: number): IdCitation {
     },
     undefined, // spanStart
     spanEnd, // spanEnd
+    idToken.start, // fullSpanStart - start from the beginning of "Id."
+    spanEnd, // fullSpanEnd - end after pin cite/parenthetical if present
   )
 }
 
@@ -1216,7 +1220,7 @@ export function findReferenceCitationsFromMarkup(
               continue
             }
             // Skip if followed by "at" and a number with a parallel citation (e.g., "Nobelman at 332, 113 S.Ct.")
-            if (/^\s+at\s+\d+(?:-\d+)?,\s*\d+\s+[A-Z]/.test(afterText)) {
+            if (/^\s+at\s+\d+(?:[-–—]\d+)?,\s*\d+\s+[A-Z]/.test(afterText)) {
               searchStart = plainTextIndex + 1
               continue
             }
@@ -1241,7 +1245,7 @@ export function findReferenceCitationsFromMarkup(
 
             // Look for pin cite pattern after the tag
             const afterTagText = document.plainText.slice(plainTextIndex + cleanTagText.length)
-            const pinCiteMatch = afterTagText.match(/^\s*(?:,\s*)?(at\s+\d+(?:-\d+)?)/i)
+            const pinCiteMatch = afterTagText.match(/^\s*(?:,\s*)?(at\s+\d+(?:[-–—]\d+)?)/i)
 
             if (pinCiteMatch) {
               pinCite = pinCiteMatch[1] // Capture "at 332" not just "332"
