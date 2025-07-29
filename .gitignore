@@ -101,6 +101,19 @@ public
 tmp/
 temp/
 
+# Debug and development files
+debug-*.ts
+debug-*.js
+test-*.ts
+test-*.js
+*-debug.ts
+*-debug.js
+verify-*.ts
+check-*.ts
+example-*.ts
+demo-*.ts
+temp-*.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
