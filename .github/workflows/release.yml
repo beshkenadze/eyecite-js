@@ -32,12 +32,16 @@ jobs:
     - name: Build project
       run: bun run build
     
-    - name: Extract version from tag
+    - name: Extract version from tag and package name
       id: get_version
       run: |
         VERSION=${GITHUB_REF#refs/tags/v}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Version: $VERSION"
+        # Extract package name from package.json
+        PACKAGE_NAME=$(jq -r '.name' package.json)
+        echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "Package name: $PACKAGE_NAME"
     
     - name: Determine npm tag
       id: npm_tag
@@ -86,25 +90,24 @@ jobs:
       with:
         name: Release ${{ steps.get_version.outputs.version }}
         body: |
-          ## Changes in ${{ steps.get_version.outputs.version }}
+          ## ${{ steps.get_version.outputs.package_name }} v${{ steps.get_version.outputs.version }}
           
-          ### Features
-          - Enhanced TypeScript citation parsing with comprehensive fixes
-          - Parallel citation support for historical U.S. Reports (e.g., "5 U.S. (1 Cranch) 137")
-          - Enhanced CFR and USC citation parsing with proper section extraction
-          - Improved state statute citation recognition
-          - Fixed DOM handling and TypeScript compilation errors
+          This is an automated release. Please check the commit history for detailed changes.
           
           ### Installation
           
           **From npm:**
           ```bash
-          npm install @beshkenadze/eyecite-js@${{ steps.get_version.outputs.version }}
+          npm install ${{ steps.get_version.outputs.package_name }}@${{ steps.get_version.outputs.version }}
+          # or
+          bun add ${{ steps.get_version.outputs.package_name }}@${{ steps.get_version.outputs.version }}
           ```
           
           **From GitHub Packages:**
           ```bash
-          npm install @beshkenadze/eyecite-js@${{ steps.get_version.outputs.version }} --registry=https://npm.pkg.github.com
+          npm install ${{ steps.get_version.outputs.package_name }}@${{ steps.get_version.outputs.version }} --registry=https://npm.pkg.github.com
+          # or
+          bun add ${{ steps.get_version.outputs.package_name }}@${{ steps.get_version.outputs.version }} --registry=https://npm.pkg.github.com
           ```
           
           ### Documentation
