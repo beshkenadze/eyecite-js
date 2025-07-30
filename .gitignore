@@ -123,3 +123,6 @@ temp-*.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Project documentation
+CLAUDE.md
