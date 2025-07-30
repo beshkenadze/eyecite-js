@@ -1,6 +1,7 @@
 BSD 2-Clause License
 
-Copyright (c) 2020, Free Law Project
+Copyright (c) 2020, Free Law Project (original Python eyecite library)
+Copyright (c) 2025, Aleksandr Beshkenadze <beshkenadze@gmail.com> (TypeScript/JavaScript port)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

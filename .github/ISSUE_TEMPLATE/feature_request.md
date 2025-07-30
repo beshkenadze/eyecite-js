@@ -1,5 +1,5 @@
 ---
-name: Feature request
+name: 🚀 Feature Request
 about: Suggest an idea for eyecite-js
 title: '[FEATURE] '
 labels: enhancement
@@ -7,14 +7,22 @@ assignees: ''
 
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**Summary**
+A brief description of the feature you'd like to see.
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+**Basic Example**
+```typescript
+// Show a simple code example of how the feature would work
+import { getCitations } from '@beshkenadze/eyecite'
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+// Your proposed usage
+```
+
+**Motivation**
+Why is this feature needed? Please describe:
+- The problem you're trying to solve
+- Use cases that would benefit from this feature
+- Expected outcome after implementation
 
 **Example use case**
 Provide code examples showing how the feature would be used:
