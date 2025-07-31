@@ -52,6 +52,15 @@
 
 eyecite-js is a TypeScript/JavaScript port of the Python [eyecite](https://github.com/freelawproject/eyecite) library for extracting legal citations from text strings. It recognizes a wide variety of citations commonly found in legal documents, making it an essential tool for legal tech applications.
 
+### Current Status (v2.7.6-alpha.19)
+
+- ✅ **95% Feature Complete**: Nearly full parity with Python eyecite v2.7.6
+- ✅ **Production Ready**: 335 passing tests, comprehensive citation coverage
+- ✅ **Enhanced Features**: Id. citation resolution with section substitution, DOL Opinion support
+- 🚧 **In Progress**: Performance optimizations, test infrastructure improvements
+
+See our [ROADMAP.md](ROADMAP.md) for detailed feature parity status and development plans.
+
 ### Key Features
 
 - 🚀 **Complete Port**: Full implementation of the Python eyecite library functionality
@@ -59,6 +68,7 @@ eyecite-js is a TypeScript/JavaScript port of the Python [eyecite](https://githu
 - 🌐 **JavaScript Compatible**: Works in both Node.js and browser environments
 - 🔧 **Extensible**: Support for custom tokenizers and citation patterns
 - 🎯 **Battle-tested**: Based on the proven Python library used by CourtListener and Harvard's Caselaw Access Project
+- ✨ **JavaScript Enhancements**: Additional features like DOL Opinion citations not in Python version
 
 ### Built With
 
@@ -142,10 +152,11 @@ eyecite-js recognizes the following citation types:
 
 - **Full case citations**: `Bush v. Gore, 531 U.S. 98, 99-100 (2000)`
 - **Short form citations**: `531 U.S., at 99`
-- **Id. citations**: `Id., at 101`
+- **Id. citations**: `Id., at 101` (with advanced section substitution)
 - **Supra citations**: `Bush, supra, at 100`
-- **Law citations**: `29 C.F.R. §§ 778.113, 778.114`
+- **Law citations**: `29 C.F.R. §§ 778.113, 778.114` (with multiple section support)
 - **Journal citations**: `1 Minn. L. Rev. 1`
+- **DOL Opinion Letters**: `DOL Opinion Letter FLSA 2009-19 (Jan. 16, 2009)`
 
 ### Citation Types
 
@@ -156,8 +167,10 @@ Each citation type is represented by a specific class:
 - **FullLawCitation**: Statutory and regulatory citations
 - **FullJournalCitation**: Law journal citations
 - **IdCitation**: "Id." citations referring to previous citations
+- **IdLawCitation**: "Id. § 123" citations with section references
 - **SupraCitation**: "Supra" citations referring to previous citations
 - **ReferenceCitation**: Reference citations using case names
+- **DOLOpinionCitation**: Department of Labor Opinion Letters
 
 ### Multiple Section Support
 
@@ -199,15 +212,15 @@ const annotated = annotateCitations(
 
 ### Citation Resolution
 
-Resolve citations to their common references:
+Resolve citations to their common references with advanced Id. support:
 
 ```typescript
-import { resolveCitations } from '@beshkenadze/eyecite'
+import { resolveCitationsWithIdSubstitution } from '@beshkenadze/eyecite'
 
-const text = 'first citation: 1 U.S. 12. second citation: 2 F.3d 2. third citation: Id.'
+const text = 'first: 29 C.F.R. § 778.113. second: Id. § 778.114. third: Id.'
 const citations = getCitations(text)
-const resolved = resolveCitations(citations)
-// Groups citations by their common references
+const resolved = resolveCitationsWithIdSubstitution(citations)
+// Properly resolves Id. citations with section substitution
 ```
 
 <p align="right">(<a href="#-table-of-contents">back to top</a>)</p>
@@ -260,15 +273,16 @@ citations.forEach(citation => {
 
 ## 🗺️ Roadmap
 
-- [x] Complete Python library port
-- [x] TypeScript support
-- [x] Multiple section parsing
-- [ ] Performance optimizations
-- [ ] Browser-specific bundle
-- [ ] Additional citation formats
-- [ ] Internationalization support
+- [x] Core Python library port (95% complete)
+- [x] TypeScript support with full type safety
+- [x] Multiple section parsing (C.F.R. §§)
+- [x] Id. citation resolution with section substitution
+- [x] DOL Opinion Letter support
+- [ ] Performance optimizations (WebAssembly tokenizer)
+- [ ] Complete test infrastructure parity
+- [ ] Additional citation formats (patents, international)
 
-See the [open issues](https://github.com/beshkenadze/eyecite-js/issues) for a full list of proposed features (and known issues).
+See our detailed [ROADMAP.md](ROADMAP.md) for the complete development plan and [open issues](https://github.com/beshkenadze/eyecite-js/issues) for specific features.
 
 <p align="right">(<a href="#-table-of-contents">back to top</a>)</p>
 
