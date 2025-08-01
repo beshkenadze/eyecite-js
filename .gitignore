@@ -126,3 +126,6 @@ temp-*.ts
 
 # Project documentation
 CLAUDE.md
+
+# Crush agent directory
+.crush

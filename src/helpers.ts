@@ -490,6 +490,28 @@ export function findCaseName(citation: CaseCitation, document: Document, short =
 
   // Phase 2: Process found case name if any
   processCaseName(citation, document, updatedState, short)
+  
+  // Phase 3: Post-processing to fix "In re" cases that got their prefix stripped
+  if (!short && citation.metadata.plaintiff && (!citation.metadata.defendant || citation.metadata.defendant === '')) {
+    const citationStart = citation.span().start
+    const textBeforeCitation = document.plainText.substring(0, citationStart)
+    
+    // Check if "In re" appears right before the plaintiff name in the text
+    const plaintiffName = citation.metadata.plaintiff
+    const escapedPlaintiff = plaintiffName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const inRePattern = new RegExp(`\\b(in\\s+re)\\s+${escapedPlaintiff}`, 'i')
+    const inReMatch = textBeforeCitation.match(inRePattern)
+    
+    if (inReMatch && !plaintiffName.toLowerCase().startsWith('in re')) {
+      citation.metadata.plaintiff = `In re ${plaintiffName}`
+      
+      // Also update the fullSpanStart to include "In re"
+      const inReIndex = textBeforeCitation.toLowerCase().lastIndexOf('in re')
+      if (inReIndex !== -1) {
+        citation.fullSpanStart = inReIndex
+      }
+    }
+  }
 }
 
 /**
@@ -853,8 +875,7 @@ function scanForCaseBoundaries(document: Document, citation: CaseCitation, state
     if (isVToken(word)) {
       state.vToken = word
       state.vTokenIndex = index
-      state.startIndex = index - 2
-      state.candidateCaseName = extractText(words, state.startIndex, state.titleStartingIndex)
+      // Don't set start index yet - we need to find where the plaintiff actually starts
       continue
     }
 
@@ -871,7 +892,7 @@ function scanForCaseBoundaries(document: Document, citation: CaseCitation, state
     // Break on lowercase word w/o "v" token
     if (isLowercaseWithoutVToken(wordStr, state.vToken)) {
       // Common lowercase words that appear in case names - continue scanning
-      if (['ex', 'rel.', 'for', 'of', 'the', 'and', 'in', 'on', 'to', 'at', 'by'].includes(wordStr)) {
+      if (['ex', 'rel.', 'for', 'of', 'the', 'and', 'in', 're', 'on', 'to', 'at', 'by'].includes(wordStr)) {
         continue
       }
       if (word instanceof SupraCitation) {
@@ -881,12 +902,18 @@ function scanForCaseBoundaries(document: Document, citation: CaseCitation, state
       state.startIndex = index + 2
       state.candidateCaseName = extractText(words, state.startIndex, state.titleStartingIndex)
 
-      // Extract just the capitalized word if possible
-      const match = state.candidateCaseName.match(/\b([A-Z][a-zA-Z0-9]*)\b.*/)
-      if (match) {
-        state.candidateCaseName = state.candidateCaseName.slice(match.index)
+      // Check for special patterns like "In re" or "Matter of" first
+      const specialPatternMatch = state.candidateCaseName.match(/\b((?:in\s+re|matter\s+of|ex\s+parte)\s+[A-Z].+)/i)
+      if (specialPatternMatch) {
+        state.candidateCaseName = specialPatternMatch[1]
       } else {
-        state.candidateCaseName = null
+        // Extract just the capitalized word if possible
+        const match = state.candidateCaseName.match(/\b([A-Z][a-zA-Z0-9]*)\b.*/)
+        if (match) {
+          state.candidateCaseName = state.candidateCaseName.slice(match.index)
+        } else {
+          state.candidateCaseName = null
+        }
       }
       break
     }
@@ -917,6 +944,120 @@ function processCaseName(
 
 
   // If we have a v token, extract plaintiff and defendant separately
+  if (state.vToken && state.vTokenIndex !== undefined && state.candidateCaseName) {
+    // Split on v. or v
+    const splits = state.candidateCaseName.split(/\s+v\.?\s+/i)
+    if (splits.length === 2) {
+      let [plaintiff, defendant] = splits
+      
+      // Clean plaintiff by removing common preceding words
+      const cleanedPlaintiff = plaintiff.trim()
+        .replace(/^(your|the|this|that|see|as|in|court|judge)\s+/gi, '')
+        .replace(/^(discussed|mentioned|cited)\s+(in\s+)?/gi, '')
+      
+      // If plaintiff is still too long or starts lowercase, find first capitalized sequence
+      const words = cleanedPlaintiff.split(/\s+/)
+      if (words.length > 5 || (cleanedPlaintiff[0] && cleanedPlaintiff[0] !== cleanedPlaintiff[0].toUpperCase())) {
+        // Find the first capitalized word sequence
+        const match = cleanedPlaintiff.match(/\b([A-Z][A-Za-z']*(?:\s+[A-Z][A-Za-z']*)*)\b/)
+        if (match) {
+          citation.metadata.plaintiff = stripStopWords(match[1])
+        } else {
+          citation.metadata.plaintiff = stripStopWords(cleanedPlaintiff)
+        }
+      } else {
+        citation.metadata.plaintiff = stripStopWords(cleanedPlaintiff)
+      }
+      
+      citation.metadata.defendant = stripStopWords(defendant.trim())
+      
+      // Now calculate the correct full span start
+      // Find where the actual plaintiff name starts in the original text
+      const plaintiffName = citation.metadata.plaintiff
+      if (plaintiffName) {
+        // Get the full text to search for plaintiff position
+        const fullText = document.plainText || words.join('')
+        
+        // Find where the plaintiff appears before the citation
+        const citationStart = citation.span().start
+        const textBeforeCitation = fullText.substring(0, citationStart)
+        
+        // Search backwards for the plaintiff name
+        const lastPlaintiffIndex = textBeforeCitation.toLowerCase().lastIndexOf(plaintiffName.toLowerCase())
+        
+        if (lastPlaintiffIndex !== -1) {
+          citation.fullSpanStart = lastPlaintiffIndex
+        } else {
+          // Fallback: use the state.startIndex calculation
+          if (state.startIndex !== null && state.startIndex !== undefined) {
+            const offset = words.slice(state.startIndex, citation.index).join('').length
+            citation.fullSpanStart = Math.max(0, citation.span().start - offset)
+          }
+        }
+      }
+      
+      return
+    }
+  }
+  
+  // Check for special one-party case patterns first
+  if (state.candidateCaseName && !state.vToken) {
+    let matched = false
+    
+    // Check if this is a one-party case like "Matter of X" or "In re X"
+    const specialCaseMatch = state.candidateCaseName.match(/^.*?((?:matter of|in re|ex parte)\s+.+?)(?:\s*,|$)/i)
+    
+    if (specialCaseMatch) {
+      // For special cases, preserve the full phrase and only clean trailing punctuation
+      const fullPhrase = specialCaseMatch[1].trim()
+      citation.metadata.plaintiff = fullPhrase.replace(/[,.\s]+$/, '')
+      citation.metadata.defendant = ''
+      matched = true
+    } else {
+      // Check if this might be an "In re" case where "In re" was stripped
+      // Look backwards in the original text to see if we can find "In re" before this name
+      if (citation.document?.plainText) {
+        const citationStart = citation.span().start
+        const textBeforeCitation = citation.document.plainText.substring(0, citationStart)
+        
+        // Check if "In re" appears before this candidate case name
+        const inRePattern = new RegExp(`\\b(in\\s+re)\\s+${state.candidateCaseName.replace(/[,.\s]+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i')
+        const inReMatch = textBeforeCitation.match(inRePattern)
+        
+        if (inReMatch) {
+          citation.metadata.plaintiff = `In re ${state.candidateCaseName.replace(/[,.\s]+$/, '')}`
+          citation.metadata.defendant = ''
+          matched = true
+        } else {
+          // Fallback for other single-party cases
+          const generalMatch = state.candidateCaseName.match(/^.*?(?:the\s+)?(.+?)(?:\s*,|$)/i)
+          if (generalMatch && generalMatch[1].trim().length > 2) {
+            citation.metadata.plaintiff = stripStopWords(generalMatch[1].trim())
+            citation.metadata.defendant = ''
+            matched = true
+          }
+        }
+      } else {
+        // Fallback for other single-party cases when no document text available
+        const generalMatch = state.candidateCaseName.match(/^.*?(?:the\s+)?(.+?)(?:\s*,|$)/i)
+        if (generalMatch && generalMatch[1].trim().length > 2) {
+          citation.metadata.plaintiff = stripStopWords(generalMatch[1].trim())
+          citation.metadata.defendant = ''
+          matched = true
+        }
+      }
+    }
+    
+    if (matched && state.startIndex !== undefined && state.startIndex < citation.index) {
+      const offset = words
+        .slice(state.startIndex, citation.index)
+        .reduce((acc, w) => acc + String(w).length, 0)
+      citation.fullSpanStart = citation.span().start - offset
+      return
+    }
+  }
+  
+  // Original logic for when we don't have a clear v token case
   if (state.vToken && state.vTokenIndex !== undefined) {
     // Extract plaintiff - text before v token
     let plaintiffStart = Math.max(0, state.vTokenIndex - 10) // Look back up to 10 words
@@ -1084,7 +1225,7 @@ function isLowercaseAfterVToken(wordStr: string, vToken: any): boolean {
     vToken !== null &&
     !wordStr[0].match(/[A-Z]/) &&
     wordStr.trim() !== '' &&
-    !['of', 'the', 'an', 'and'].includes(wordStr)
+    !['ex', 'rel.', 'of', 'the', 'an', 'and'].includes(wordStr)
   )
 }
 
