@@ -12,6 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated version management with tag-based releases
 - Support for alpha, beta, and rc prerelease tags
 
+## [2.7.6-alpha.22] - 2025-08-01
+
+### Fixed
+- Overlapping citation annotation now properly handles nested citations
+- Multi-section law citations (e.g., "29 C.F.R. §§ 778.113, 778.114, 778.115") are now annotated with proper HTML nesting
+- Fixed malformed HTML output when annotating citations with overlapping spans
+
+### Added
+- Tree-based citation structure for handling overlapping spans
+- Bottom-up annotation processing to ensure proper nesting
+- Comprehensive test suite for overlapping citation annotation
+
+### Changed
+- Rewrote `applyAnnotations` function to process citations from innermost to outermost
+- Enhanced annotation logic to preserve all citation information while maintaining valid HTML structure
+
 ## [2.7.6-alpha.21] - 2025-08-01
 
 ### Fixed
