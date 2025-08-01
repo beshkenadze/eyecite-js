@@ -7,7 +7,7 @@ export { cleanersLookup, cleanText } from './clean'
 // Data and utilities
 export { COURTS, REPORTERS } from './data'
 // Main functions
-export { extractReferenceCitations, getCitations } from './find'
+export { extractReferenceCitations, getCitations, type OverlapHandling, type GetCitationsOptions } from './find'
 export { disambiguateReporters, filterCitations } from './helpers'
 // Core models and types
 export {

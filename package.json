@@ -1,6 +1,6 @@
 {
   "name": "@beshkenadze/eyecite",
-  "version": "2.7.6-alpha.22",
+  "version": "2.7.6-alpha.23",
   "description": "TypeScript library for extracting legal citations from text strings. A complete port of the Python eyecite library.",
   "main": "dist/index.js",
   "module": "dist/index.js",

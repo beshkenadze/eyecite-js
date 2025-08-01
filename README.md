@@ -78,6 +78,8 @@ See our [ROADMAP.md](ROADMAP.md) for detailed feature parity status and developm
 
 ## 📦 Installation
 
+> **Note**: Version 2.7.6-alpha.23 introduces a new options-based API for `getCitations()`. See the [Migration Guide](MIGRATION_GUIDE.md) for details.
+
 ### Package Managers
 
 **Bun** (recommended):
@@ -210,6 +212,23 @@ const annotated = annotateCitations(
 // Returns: 'bob lissner v. test <a href="#">1 U.S. 12</a>, 347-348 (4th Cir. 1982)'
 ```
 
+### Overlap Handling
+
+Handle overlapping citations in multi-section references:
+
+```typescript
+const text = 'See 29 C.F.R. §§ 778.113, 778.114, 778.115 for details.'
+
+// Default: returns all citations including overlapping ones
+const all = getCitations(text)
+
+// Option 1: Get only parent citations (no nested ones)
+const parentOnly = getCitations(text, { overlapHandling: 'parent-only' })
+
+// Option 2: Get only nested citations (no parent)
+const childrenOnly = getCitations(text, { overlapHandling: 'children-only' })
+```
+
 ### Citation Resolution
 
 Resolve citations to their common references with advanced Id. support:
@@ -238,8 +257,29 @@ Extract citations from text.
   - `tokenizer`: Custom tokenizer instance
   - `markupText`: Original markup text for enhanced extraction
   - `cleanSteps`: Text cleaning steps to apply
+  - `overlapHandling`: How to handle overlapping citations (default: 'all')
+    - `'all'`: Returns all citations including overlapping ones
+    - `'parent-only'`: Returns only encompassing citations, excluding nested ones
+    - `'children-only'`: Returns only nested citations, excluding parent citations
 
 **Returns:** Array of citation objects
+
+**Example with overlap handling:**
+```typescript
+const text = 'See 29 C.F.R. §§ 778.113, 778.114, 778.115 for details.'
+
+// Get all citations (default behavior)
+const allCitations = getCitations(text)
+// Returns 3 citations: the full multi-section citation and two nested ones
+
+// Get only the parent citation
+const parentOnly = getCitations(text, { overlapHandling: 'parent-only' })
+// Returns 1 citation: "29 C.F.R. §§ 778.113, 778.114, 778.115"
+
+// Get only the nested citations
+const childrenOnly = getCitations(text, { overlapHandling: 'children-only' })
+// Returns 2 citations: "778.114" and "778.115"
+```
 
 ### Citation Objects
 
@@ -257,9 +297,23 @@ Each citation object contains:
 eyecite-js is written in TypeScript and includes complete type definitions:
 
 ```typescript
-import { getCitations, FullCaseCitation, FullLawCitation } from '@beshkenadze/eyecite'
+import { 
+  getCitations, 
+  FullCaseCitation, 
+  FullLawCitation,
+  GetCitationsOptions,
+  OverlapHandling 
+} from '@beshkenadze/eyecite'
 
-const citations = getCitations(text)
+// Use typed options
+const options: GetCitationsOptions = {
+  overlapHandling: 'parent-only',
+  removeAmbiguous: true
+}
+
+const citations = getCitations(text, options)
+
+// Type-safe citation handling
 citations.forEach(citation => {
   if (citation instanceof FullCaseCitation) {
     console.log(`Case: ${citation.groups.volume} ${citation.groups.reporter} ${citation.groups.page}`)

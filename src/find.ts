@@ -67,50 +67,122 @@ function identifyEmphasisTags(markupText: string): Array<[string, number, number
 }
 
 /**
+ * Options for handling overlapping citations
+ */
+export type OverlapHandling = 'all' | 'parent-only' | 'children-only'
+
+/**
+ * Options for getCitations function
+ */
+export interface GetCitationsOptions {
+  /** Remove ambiguous citations (default: false) */
+  removeAmbiguous?: boolean
+  /** Custom tokenizer instance */
+  tokenizer?: Tokenizer
+  /** Original markup text for enhanced extraction */
+  markupText?: string
+  /** Text cleaning steps to apply */
+  cleanSteps?: Array<string | ((text: string) => string)>
+  /** How to handle overlapping citations (default: 'all') */
+  overlapHandling?: OverlapHandling
+}
+
+/**
  * Main function to extract citations from text
+ * 
+ * @param plainText - The text to extract citations from
+ * @param options - Optional configuration object
+ * @returns Array of citation objects
+ */
+export function getCitations(
+  plainText: string,
+  options?: GetCitationsOptions
+): CitationBase[]
+
+/**
+ * Main function to extract citations from text (legacy signature for backward compatibility)
+ * @deprecated Use the options object signature instead
+ */
+export function getCitations(
+  plainText: string,
+  removeAmbiguous?: boolean,
+  tokenizer?: Tokenizer,
+  markupText?: string,
+  cleanSteps?: Array<string | ((text: string) => string)>,
+  overlapHandling?: OverlapHandling
+): CitationBase[]
+
+/**
+ * Main function to extract citations from text (implementation)
  */
 export function getCitations(
   plainText = '',
-  removeAmbiguous = false,
-  tokenizer: Tokenizer = defaultTokenizer,
-  markupText = '',
+  optionsOrRemoveAmbiguous?: GetCitationsOptions | boolean,
+  tokenizer?: Tokenizer,
+  markupText?: string,
   cleanSteps?: Array<string | ((text: string) => string)>,
+  overlapHandling?: OverlapHandling
 ): CitationBase[] {
+  // Handle both old and new signatures
+  let options: GetCitationsOptions = {}
+  
+  if (typeof optionsOrRemoveAmbiguous === 'object' && optionsOrRemoveAmbiguous !== null) {
+    // New signature with options object
+    options = optionsOrRemoveAmbiguous
+  } else {
+    // Legacy signature with individual parameters
+    options = {
+      removeAmbiguous: optionsOrRemoveAmbiguous as boolean,
+      tokenizer: tokenizer || defaultTokenizer,
+      markupText: markupText || '',
+      cleanSteps,
+      overlapHandling: overlapHandling || 'all'
+    }
+  }
+  
+  // Set defaults
+  const {
+    removeAmbiguous = false,
+    tokenizer: customTokenizer = defaultTokenizer,
+    markupText: markup = '',
+    cleanSteps: cleaning,
+    overlapHandling: overlap = 'all'
+  } = options
   if (plainText === 'eyecite') {
     return jokeCite
   }
 
   // If no plainText but markupText is provided with cleanSteps, extract plainText
-  if (!plainText && markupText && cleanSteps) {
-    plainText = cleanText(markupText, cleanSteps)
+  if (!plainText && markup && cleaning) {
+    plainText = cleanText(markup, cleaning)
   }
 
   // Create document object
   const document: Document = {
     plainText,
-    markupText,
-    cleanSteps,
+    markupText: markup,
+    cleanSteps: cleaning,
     citationTokens: [],
     words: [],
     emphasisTags: [],
-    sourceText: markupText || plainText,
+    sourceText: markup || plainText,
     plainToMarkup: undefined,
     markupToPlain: undefined,
   }
 
   // Process markup text if provided
-  if (markupText) {
+  if (markup) {
     // Identify emphasis tags
-    document.emphasisTags = identifyEmphasisTags(markupText)
+    document.emphasisTags = identifyEmphasisTags(markup)
 
     // Create SpanUpdaters for position mapping
-    const placeholder = placeholderMarkup(markupText)
+    const placeholder = placeholderMarkup(markup)
     document.plainToMarkup = new SpanUpdater(plainText, placeholder)
-    document.markupToPlain = new SpanUpdater(markupText, plainText)
+    document.markupToPlain = new SpanUpdater(markup, plainText)
   }
 
   // Tokenize the document
-  const [words, citationTokens] = tokenizer.tokenize(document.plainText)
+  const [words, citationTokens] = customTokenizer.tokenize(document.plainText)
   document.words = words
   document.citationTokens = citationTokens
 
@@ -199,8 +271,79 @@ export function getCitations(
   if (removeAmbiguous) {
     filteredCitations = disambiguateReporters(filteredCitations)
   }
+  
+  // Handle overlapping citations based on user preference
+  if (overlap !== 'all') {
+    filteredCitations = handleOverlappingCitations(filteredCitations, overlap)
+  }
 
   return filteredCitations
+}
+
+/**
+ * Handle overlapping citations based on user preference
+ */
+function handleOverlappingCitations(
+  citations: CitationBase[],
+  handling: OverlapHandling
+): CitationBase[] {
+  if (citations.length === 0) return citations
+  
+  // Sort citations by start position, then by length (longer first)
+  const sortedCitations = [...citations].sort((a, b) => {
+    const spanA = a.span()
+    const spanB = b.span()
+    if (spanA.start !== spanB.start) {
+      return spanA.start - spanB.start
+    }
+    return (spanB.end - spanB.start) - (spanA.end - spanA.start)
+  })
+  
+  const result: CitationBase[] = []
+  const processedIndices = new Set<number>()
+  
+  for (let i = 0; i < sortedCitations.length; i++) {
+    if (processedIndices.has(i)) continue
+    
+    const citation = sortedCitations[i]
+    const span = citation.span()
+    
+    // Find all citations that overlap with this one
+    const overlapping: number[] = []
+    for (let j = i + 1; j < sortedCitations.length; j++) {
+      const otherSpan = sortedCitations[j].span()
+      
+      // Check if other citation is completely contained within this one
+      if (otherSpan.start >= span.start && otherSpan.end <= span.end) {
+        overlapping.push(j)
+      }
+    }
+    
+    if (overlapping.length > 0) {
+      // We have overlapping citations
+      if (handling === 'parent-only') {
+        // Keep only the parent (current citation)
+        result.push(citation)
+        // Mark children as processed
+        overlapping.forEach(idx => processedIndices.add(idx))
+      } else if (handling === 'children-only') {
+        // Keep only the children
+        overlapping.forEach(idx => {
+          result.push(sortedCitations[idx])
+          processedIndices.add(idx)
+        })
+        // Don't add the parent
+      }
+      processedIndices.add(i)
+    } else {
+      // No overlaps, keep the citation
+      result.push(citation)
+      processedIndices.add(i)
+    }
+  }
+  
+  // Sort result back to original order
+  return result.sort((a, b) => a.span().start - b.span().start)
 }
 
 /**

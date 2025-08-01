@@ -196,9 +196,10 @@ export function annotateCitations(plainText: string, options: AnnotationOptions 
 
   const {
     annotateFunc = defaultAnnotateFunc,
-    citations = options.tokenizer 
-      ? getCitations(plainText, false, options.tokenizer)
-      : getCitations(plainText, false),
+    citations = getCitations(plainText, { 
+      removeAmbiguous: false,
+      tokenizer: options.tokenizer 
+    }),
   } = options
 
   if (citations.length === 0) {
@@ -327,9 +328,10 @@ export function annotateCitationsHtml(htmlText: string, options: AnnotationOptio
     .join('')
 
   // Get citations from plain text
-  const citationsToUse = citations || (tokenizer 
-    ? getCitations(plainText, false, tokenizer)
-    : getCitations(plainText, false))
+  const citationsToUse = citations || getCitations(plainText, { 
+    removeAmbiguous: false,
+    tokenizer 
+  })
 
   if (citationsToUse.length === 0) {
     return htmlText

@@ -12,6 +12,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated version management with tag-based releases
 - Support for alpha, beta, and rc prerelease tags
 
+## [2.7.6-alpha.23] - 2025-08-01
+
+### Added
+- New `GetCitationsOptions` interface for cleaner API usage
+- New `overlapHandling` option in `getCitations()` with three modes:
+  - `'all'` (default): Returns all citations including overlapping ones
+  - `'parent-only'`: Returns only the encompassing citations, excluding nested ones
+  - `'children-only'`: Returns only the nested citations, excluding parent citations
+- Comprehensive test suite for overlap handling options
+- Function overloading for backward compatibility
+
+### Fixed
+- Users can now avoid overlapping citations when using `getCitations()` directly
+- Manual annotation of multi-section citations now works correctly with `'parent-only'` option
+
+### Changed
+- **BREAKING**: `getCitations()` now accepts an options object as the second parameter (legacy signature still supported)
+  - Before: `getCitations(text, false, undefined, '', undefined, 'parent-only')`
+  - After: `getCitations(text, { overlapHandling: 'parent-only' })`
+- Exported `OverlapHandling` type and `GetCitationsOptions` interface from main index
+
+### Deprecated
+- The legacy signature with individual parameters is deprecated but still functional
+
 ## [2.7.6-alpha.22] - 2025-08-01
 
 ### Fixed
