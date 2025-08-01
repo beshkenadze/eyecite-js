@@ -833,6 +833,7 @@ function extractFromTokenizedSections(document: Document, index: number, section
   const token = document.words[index] as LawCitationToken
   const citations: FullLawCitation[] = []
 
+
   // Split the sections by comma or semicolon, handling various formats
   const sectionParts = sectionsText.split(/[,;]/).map(s => s.trim()).filter(s => s.length > 0)
   
@@ -862,12 +863,43 @@ function extractFromTokenizedSections(document: Document, index: number, section
       }
     }
     
-    // Calculate non-overlapping span positions for each section
-    // Use a large gap to ensure no overlap detection issues
-    const spanWidth = 100  // Width of each citation span
-    const gapBetween = 10  // Gap between spans to prevent overlap
-    const sectionStart = token.start + (i * (spanWidth + gapBetween))
-    const sectionEnd = sectionStart + spanWidth
+    // For the first citation, use the original token's span
+    // For additional citations, we'll need to find their actual positions in the text
+    let sectionStart: number
+    let sectionEnd: number
+    
+    if (i === 0) {
+      // First section uses the original token span
+      sectionStart = token.start
+      sectionEnd = token.end
+    } else {
+      // For subsequent sections, try to find their actual position in the source text
+      const sourceText = document.sourceText || ''
+      const searchStart = token.start
+      const searchEnd = Math.min(token.end + 50, sourceText.length) // Look a bit beyond token end
+      const searchText = sourceText.substring(searchStart, searchEnd)
+      
+      // Look for this section number in the text
+      const sectionIndex = searchText.indexOf(sectionNumber)
+      if (sectionIndex !== -1) {
+        // Found the actual position
+        sectionStart = searchStart + sectionIndex
+        sectionEnd = sectionStart + sectionNumber.length
+        
+        // If there's a parenthetical, include it
+        if (parenthetical) {
+          const parenText = ` (${parenthetical})`
+          if (sourceText.substring(sectionEnd, sectionEnd + parenText.length) === parenText) {
+            sectionEnd += parenText.length
+          }
+        }
+      } else {
+        // Fallback: use the same position as the original token
+        // This ensures we don't create out-of-bounds spans
+        sectionStart = token.start
+        sectionEnd = token.end
+      }
+    }
     
     // Create a new token for this section
     const sectionToken = new LawCitationToken(

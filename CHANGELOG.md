@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated version management with tag-based releases
 - Support for alpha, beta, and rc prerelease tags
 
+## [2.7.6-alpha.21] - 2025-08-01
+
+### Fixed
+- Multi-section law citations (e.g., "29 C.F.R. §§ 778.113, 778.114, 778.115") now correctly return separate citations for each section
+- Fixed span position calculation for multi-section citations - each citation now has accurate start/end positions
+- Fixed overlap detection logic to allow multi-section citations from the same law source
+
+### Added
+- New test suite for multi-section law citation handling
+- `areMultiSectionLawCitations` helper function to properly identify related law citations
+
+### Changed
+- Enhanced `extractFromTokenizedSections` to calculate accurate span positions for each section
+- Updated `filterCitations` to preserve multi-section law citations even when they have overlapping spans
+
 ## [2.7.6-alpha.3] - 2024-07-18
 
 ### Added

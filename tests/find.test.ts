@@ -4059,7 +4059,7 @@ describe('Find Citations', () => {
           year: 2007,
           metadata: {
             plaintiff: 'Allen',
-            defendant: 'Bd.', // Only extracts first part due to current logic
+            defendant: 'Bd. of Pub. Educ. for Bibb Cnty.',
             court: 'ca11',
           },
         },
@@ -4122,7 +4122,7 @@ describe('Find Citations', () => {
           year: 1986,
           metadata: {
             plaintiff: 'Johnson',
-            defendant: 'Nat\'l Ass\'n', // Current logic stops at 'of'
+            defendant: 'Nat\'l Ass\'n of Mfrs.',
             court: 'cadc',
           },
         },
