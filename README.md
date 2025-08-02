@@ -5,6 +5,8 @@
 [![npm version](https://badge.fury.io/js/@beshkenadze%2Feyecite.svg)](https://badge.fury.io/js/@beshkenadze%2Feyecite)
 [![CI](https://github.com/beshkenadze/eyecite-js/actions/workflows/ci.yml/badge.svg)](https://github.com/beshkenadze/eyecite-js/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-BSD%202--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![Tests](https://img.shields.io/badge/tests-354%20passing-brightgreen)](https://github.com/beshkenadze/eyecite-js/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)](https://www.typescriptlang.org/)
 [![GitHub issues](https://img.shields.io/github/issues/beshkenadze/eyecite-js)](https://github.com/beshkenadze/eyecite-js/issues)
 [![GitHub stars](https://img.shields.io/github/stars/beshkenadze/eyecite-js)](https://github.com/beshkenadze/eyecite-js/stargazers)
 
@@ -28,6 +30,7 @@
 - [About The Project](#about-the-project)
 - [Built With](#built-with)
 - [Installation](#-installation)
+- [What's New](#-whats-new-in-v276-alpha23)
   - [Package Managers](#package-managers)
   - [Registries](#registries)
 - [Quick Start](#-quick-start)
@@ -36,6 +39,7 @@
   - [Multiple Section Support](#multiple-section-support)
   - [Text Cleaning](#text-cleaning)
   - [Citation Annotation](#citation-annotation)
+  - [Overlap Handling](#overlap-handling)
   - [Citation Resolution](#citation-resolution)
 - [API Documentation](#-api-documentation)
 - [TypeScript Support](#-typescript-support)
@@ -52,12 +56,16 @@
 
 eyecite-js is a TypeScript/JavaScript port of the Python [eyecite](https://github.com/freelawproject/eyecite) library for extracting legal citations from text strings. It recognizes a wide variety of citations commonly found in legal documents, making it an essential tool for legal tech applications.
 
-### Current Status (v2.7.6-alpha.19)
+### Current Status (v2.7.6-alpha.23)
 
-- ✅ **95% Feature Complete**: Nearly full parity with Python eyecite v2.7.6
-- ✅ **Production Ready**: 335 passing tests, comprehensive citation coverage
-- ✅ **Enhanced Features**: Id. citation resolution with section substitution, DOL Opinion support
-- 🚧 **In Progress**: Performance optimizations, test infrastructure improvements
+- ✅ **Complete Feature Parity**: Full parity with Python eyecite v2.7.6
+- ✅ **Production Ready**: 354 passing tests, comprehensive citation coverage
+- ✅ **Enhanced Features**: 
+  - Overlap handling for multi-section citations
+  - Clean options-based API
+  - Id. citation resolution with section substitution
+  - DOL Opinion support
+- ✅ **Modern API**: Refactored `getCitations()` with options object for better developer experience
 
 See our [ROADMAP.md](ROADMAP.md) for detailed feature parity status and development plans.
 
@@ -78,7 +86,29 @@ See our [ROADMAP.md](ROADMAP.md) for detailed feature parity status and developm
 
 ## 📦 Installation
 
-> **Note**: Version 2.7.6-alpha.23 introduces a new options-based API for `getCitations()`. See the [Migration Guide](MIGRATION_GUIDE.md) for details.
+## 🆕 What's New in v2.7.6-alpha.23
+
+### 🎯 Cleaner API with Options Object
+```typescript
+// Before (awkward)
+getCitations(text, false, undefined, '', undefined, 'parent-only')
+
+// After (clean)
+getCitations(text, { overlapHandling: 'parent-only' })
+```
+
+### 🔄 Overlap Handling for Multi-Section Citations
+Control how overlapping citations are returned:
+- `'all'` (default): Returns all citations including nested ones
+- `'parent-only'`: Returns only encompassing citations
+- `'children-only'`: Returns only nested citations
+
+### 🐛 Major Bug Fixes
+- Fixed multi-section law citations returning incorrect spans
+- Fixed overlapping citation annotation issues
+- Improved citation filtering logic
+
+See the [CHANGELOG](CHANGELOG.md) for a complete list of changes.
 
 ### Package Managers
 
@@ -132,6 +162,7 @@ npm install @beshkenadze/eyecite --registry=https://npm.pkg.github.com
 
 ## 🚀 Quick Start
 
+### Basic Usage
 ```typescript
 import { getCitations } from '@beshkenadze/eyecite'
 
@@ -144,6 +175,18 @@ const text = `
 
 const citations = getCitations(text)
 console.log(citations)
+```
+
+### Using Options (New in v2.7.6-alpha.23)
+```typescript
+// Handle overlapping citations in multi-section references
+const text = 'See 29 C.F.R. §§ 778.113, 778.114, 778.115'
+
+// Get only the parent citation (avoids overlaps)
+const citations = getCitations(text, { 
+  overlapHandling: 'parent-only',
+  removeAmbiguous: true 
+})
 ```
 
 <p align="right">(<a href="#-table-of-contents">back to top</a>)</p>

@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manual annotation of multi-section citations now works correctly with `'parent-only'` option
 
 ### Changed
-- **BREAKING**: `getCitations()` now accepts an options object as the second parameter (legacy signature still supported)
+- **IMPROVED**: `getCitations()` now accepts an options object as the second parameter (legacy signature still supported)
   - Before: `getCitations(text, false, undefined, '', undefined, 'parent-only')`
   - After: `getCitations(text, { overlapHandling: 'parent-only' })`
 - Exported `OverlapHandling` type and `GetCitationsOptions` interface from main index
