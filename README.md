@@ -56,7 +56,7 @@
 
 eyecite-js is a TypeScript/JavaScript port of the Python [eyecite](https://github.com/freelawproject/eyecite) library for extracting legal citations from text strings. It recognizes a wide variety of citations commonly found in legal documents, making it an essential tool for legal tech applications.
 
-### Current Status (v2.7.6-alpha.23)
+### Current Status (v2.7.6-alpha.24)
 
 - ✅ **Complete Feature Parity**: Full parity with Python eyecite v2.7.6
 - ✅ **Production Ready**: 354 passing tests, comprehensive citation coverage
@@ -86,7 +86,7 @@ See our [ROADMAP.md](ROADMAP.md) for detailed feature parity status and developm
 
 ## 📦 Installation
 
-## 🆕 What's New in v2.7.6-alpha.23
+## 🆕 What's New in v2.7.6-alpha.24
 
 ### 🎯 Cleaner API with Options Object
 ```typescript

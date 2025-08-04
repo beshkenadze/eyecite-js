@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated version management with tag-based releases
 - Support for alpha, beta, and rc prerelease tags
 
+## [2.7.6-alpha.24] - 2025-08-04
+
+### Added
+- Exported `LawCitationToken`, `JournalCitationToken`, `DOLOpinionToken`, and `PlaceholderCitationToken` from main index
+- These token types are now properly accessible for TypeScript users
+
+### Fixed
+- Fixed missing TypeScript exports for specialized token types
+- Users can now properly type-check law citation tokens and access `lawType` property
+
 ## [2.7.6-alpha.23] - 2025-08-01
 
 ### Added

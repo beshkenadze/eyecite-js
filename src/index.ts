@@ -42,6 +42,10 @@ export {
   // Token classes
   SectionToken,
   ParagraphToken,
+  LawCitationToken,
+  JournalCitationToken,
+  DOLOpinionToken,
+  PlaceholderCitationToken,
   // Reporter types
   type Edition,
   type ReporterInterface,
