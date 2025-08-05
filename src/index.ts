@@ -53,6 +53,16 @@ export {
 export { resolveCitations, resolveFullCitation, resolveCitationsWithIdSubstitution } from './resolve'
 // Utilities
 export { bisectLeft, bisectRight, SpanUpdater } from './span-updater'
+// Bluebook formatting utilities
+export { 
+  formatBluebook, 
+  reorderParallelCitations, 
+  areParallelCitations,
+  getReporterRank,
+  getReporterType,
+  ReporterType,
+  type BluebookOptions 
+} from './utils/bluebook'
 // Tokenizers
 export {
   AhocorasickTokenizer,
