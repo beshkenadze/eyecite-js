@@ -202,6 +202,7 @@ eyecite-js recognizes the following citation types:
 - **Law citations**: `29 C.F.R. §§ 778.113, 778.114` (with multiple section support)
 - **Journal citations**: `1 Minn. L. Rev. 1`
 - **DOL Opinion Letters**: `DOL Opinion Letter FLSA 2009-19 (Jan. 16, 2009)`
+- **Bluebook formatting**: Reorder parallel citations according to Bluebook hierarchy
 
 ### Citation Types
 
@@ -283,6 +284,25 @@ const text = 'first: 29 C.F.R. § 778.113. second: Id. § 778.114. third: Id.'
 const citations = getCitations(text)
 const resolved = resolveCitationsWithIdSubstitution(citations)
 // Properly resolves Id. citations with section substitution
+```
+
+### Bluebook Formatting
+
+Format citations according to Bluebook rules:
+
+```typescript
+import { formatBluebook, ReporterType } from '@beshkenadze/eyecite'
+
+// Reorder parallel citations according to Bluebook hierarchy
+const text = 'Brown v. Jones, 2020 U.S. Dist. LEXIS 12345, 2020 WL 123456 (S.D.N.Y. 2020)'
+const citations = getCitations(text)
+
+// Format with Bluebook rules (WL before LEXIS, official reporters first)
+const formatted = formatBluebook(citations, { reorderParallel: true })
+
+// Check reporter types
+import { getReporterType } from '@beshkenadze/eyecite'
+const reporterType = getReporterType(citations[0]) // Returns ReporterType.ELECTRONIC_LEXIS
 ```
 
 <p align="right">(<a href="#-table-of-contents">back to top</a>)</p>
