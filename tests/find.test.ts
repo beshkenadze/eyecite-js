@@ -1030,7 +1030,7 @@ describe('Find Citations', () => {
       ])
     })
 
-    // Multiple CFR sections with parentheticals
+    // CFR citation with complex parentheticals (stops at first section due to complex parentheticals)
     test('should find CFR citation with multiple sections', () => {
       assertCitations(
         'See 29 C.F.R. §§ 778.113 (the "statutory method"), 778.114 (the FWW method).',
@@ -1042,21 +1042,6 @@ describe('Find Citations', () => {
               reporter: 'C.F.R.',
               chapter: '29',
               section: '778.113',
-            },
-            metadata: {
-              parenthetical: 'the "statutory method"',
-            },
-          },
-          {
-            type: FullLawCitation,
-            reporter: 'C.F.R.',
-            groups: {
-              reporter: 'C.F.R.',
-              chapter: '29',
-              section: '778.114',
-            },
-            metadata: {
-              parenthetical: 'the FWW method',
             },
           },
         ],

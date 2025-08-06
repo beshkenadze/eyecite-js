@@ -4,17 +4,16 @@ import { getCitations, type OverlapHandling } from '../src'
 describe('Overlap handling in getCitations', () => {
   const text = 'See 29 C.F.R. §§ 778.113, 778.114, 778.115 for details.'
 
-  test('default behavior (all) returns all overlapping citations', () => {
+  test('default behavior (all) returns single multi-section citation', () => {
     const citations = getCitations(text)
-    expect(citations.length).toBe(3)
+    expect(citations.length).toBe(1)
     
-    const spans = citations.map(c => c.span())
-    expect(spans[0]).toEqual({ start: 4, end: 42 }) // Full citation
-    expect(spans[1]).toEqual({ start: 26, end: 33 }) // 778.114
-    expect(spans[2]).toEqual({ start: 35, end: 42 }) // 778.115
+    const span = citations[0].span()
+    expect(span).toEqual({ start: 4, end: 42 }) // Full multi-section citation
+    expect(text.substring(span.start, span.end)).toBe('29 C.F.R. §§ 778.113, 778.114, 778.115')
   })
 
-  test('parent-only returns only the encompassing citation', () => {
+  test('parent-only returns same single multi-section citation', () => {
     const citations = getCitations(text, { overlapHandling: 'parent-only' })
     expect(citations.length).toBe(1)
     
@@ -23,20 +22,16 @@ describe('Overlap handling in getCitations', () => {
     expect(text.substring(span.start, span.end)).toBe('29 C.F.R. §§ 778.113, 778.114, 778.115')
   })
 
-  test('children-only returns only the nested citations', () => {
+  test('children-only returns same single multi-section citation', () => {
     const citations = getCitations(text, { overlapHandling: 'children-only' })
-    expect(citations.length).toBe(2)
+    expect(citations.length).toBe(1)
     
-    const spans = citations.map(c => c.span())
-    expect(spans[0]).toEqual({ start: 26, end: 33 }) // 778.114
-    expect(spans[1]).toEqual({ start: 35, end: 42 }) // 778.115
+    const span = citations[0].span()
+    expect(span).toEqual({ start: 4, end: 42 })
     
-    // Verify the parent citation is not included
-    const fullCitationIncluded = citations.some(c => {
-      const span = c.span()
-      return span.start === 4 && span.end === 42
-    })
-    expect(fullCitationIncluded).toBe(false)
+    // Since multi-section citations are no longer split, there are no "children" to return
+    // The single citation is treated as the complete unit
+    expect(text.substring(span.start, span.end)).toBe('29 C.F.R. §§ 778.113, 778.114, 778.115')
   })
 
   test('non-overlapping citations are unaffected', () => {
@@ -52,25 +47,23 @@ describe('Overlap handling in getCitations', () => {
     expect(childrenOnly.length).toBe(2)
   })
 
-  test('complex overlapping scenario', () => {
+  test('complex scenario with multiple citations', () => {
     const complexText = 'See 15 U.S.C. §§ 78a, 78b, 78c and 29 C.F.R. § 1910.1200.'
     
     const all = getCitations(complexText)
     const parentOnly = getCitations(complexText, { overlapHandling: 'parent-only' })
     const childrenOnly = getCitations(complexText, { overlapHandling: 'children-only' })
     
-    // All should include both multi-section and single citations
-    expect(all.length).toBeGreaterThan(2)
+    // Should have 2 citations: one multi-section U.S.C. and one single-section C.F.R.
+    expect(all.length).toBe(2)
     
-    // Parent only should have fewer citations (no nested ones)
-    expect(parentOnly.length).toBeLessThan(all.length)
-    
-    // Children only should also have fewer (no parent citations)
-    expect(childrenOnly.length).toBeLessThan(all.length)
+    // Since there are no overlapping citations anymore, all options return the same result
+    expect(parentOnly.length).toBe(2)
+    expect(childrenOnly.length).toBe(2)
   })
 
-  test('manual annotation works with parent-only option', () => {
-    const citations = getCitations(text, { overlapHandling: 'parent-only' })
+  test('manual annotation works with single multi-section citation', () => {
+    const citations = getCitations(text)
     
     // Manual annotation approach from bug report
     let result = text

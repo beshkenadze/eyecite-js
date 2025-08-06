@@ -854,12 +854,8 @@ function extractLawCitations(document: Document, index: number): FullLawCitation
   const afterToken = sourceText.substring(tokenEnd, Math.min(sourceText.length, tokenEnd + 200))
   const contextText = beforeToken + tokenText + afterToken
 
-  // If we find §§, we need to look for additional sections
-  if (contextText.includes('§§')) {
-    return extractMultipleLawCitations(document, index)
-  }
-
-  // Otherwise, extract just one citation
+  // For law citations, we keep them as single citations even with multiple sections
+  // The tokenizer already captures the full citation correctly
   return [extractLawCitation(document, index)]
 }
 
@@ -1006,41 +1002,38 @@ function extractFromTokenizedSections(document: Document, index: number, section
       }
     }
     
-    // For the first citation, use the original token's span
-    // For additional citations, we'll need to find their actual positions in the text
+    // For all citations, we need to find their actual positions in the text
     let sectionStart: number
     let sectionEnd: number
     
-    if (i === 0) {
-      // First section uses the original token span
-      sectionStart = token.start
-      sectionEnd = token.end
-    } else {
-      // For subsequent sections, try to find their actual position in the source text
-      const sourceText = document.sourceText || ''
-      const searchStart = token.start
-      const searchEnd = Math.min(token.end + 50, sourceText.length) // Look a bit beyond token end
-      const searchText = sourceText.substring(searchStart, searchEnd)
+    // Try to find the actual position of this section in the source text
+    const sourceText = document.sourceText || ''
+    const searchStart = token.start
+    const searchEnd = Math.min(token.end + 50, sourceText.length) // Look a bit beyond token end
+    const searchText = sourceText.substring(searchStart, searchEnd)
+    
+    // Look for this section number in the text
+    const sectionIndex = searchText.indexOf(sectionNumber)
+    if (sectionIndex !== -1) {
+      // Found the actual position
+      sectionStart = searchStart + sectionIndex
+      sectionEnd = sectionStart + sectionNumber.length
       
-      // Look for this section number in the text
-      const sectionIndex = searchText.indexOf(sectionNumber)
-      if (sectionIndex !== -1) {
-        // Found the actual position
-        sectionStart = searchStart + sectionIndex
-        sectionEnd = sectionStart + sectionNumber.length
-        
-        // If there's a parenthetical, include it
-        if (parenthetical) {
-          const parenText = ` (${parenthetical})`
-          if (sourceText.substring(sectionEnd, sectionEnd + parenText.length) === parenText) {
-            sectionEnd += parenText.length
-          }
+      // If there's a parenthetical, include it
+      if (parenthetical) {
+        const parenText = ` (${parenthetical})`
+        if (sourceText.substring(sectionEnd, sectionEnd + parenText.length) === parenText) {
+          sectionEnd += parenText.length
         }
-      } else {
-        // Fallback: use the same position as the original token
-        // This ensures we don't create out-of-bounds spans
+      }
+    } else {
+      // Fallback: for the first section, use the original token position
+      // for others, skip them as we can't find them
+      if (i === 0) {
         sectionStart = token.start
         sectionEnd = token.end
+      } else {
+        continue // Skip this section if we can't find it
       }
     }
     
