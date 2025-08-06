@@ -3,12 +3,12 @@ import { getCitations, annotateCitations } from '../src'
 import type { FullLawCitation } from '../src/models/citations'
 
 describe('Overlapping citation annotation', () => {
-  test('should handle multi-section law citations with overlapping spans', () => {
+  test('should handle multi-section law citations as single citation', () => {
     const text = 'See 29 C.F.R. §§ 778.113, 778.114, 778.115 for details.'
     const citations = getCitations(text)
     
-    // Verify we have overlapping citations
-    expect(citations.length).toBe(3)
+    // Multi-section citations are now kept as single citations
+    expect(citations.length).toBe(1)
     
     // Annotate the text
     const annotated = annotateCitations(text, {
@@ -23,24 +23,23 @@ describe('Overlapping citation annotation', () => {
       console.log(`  Citation ${i}: [${span.start}, ${span.end}] = "${text.substring(span.start, span.end)}"`)
     })
     
-    // The output should properly handle nested citations
-    // We expect the individual sections to be annotated only with their section numbers
-    // since they are nested within the larger citation
-    
-    // Count opening and closing tags
+    // The output should have a single citation annotation
     const openTags = (annotated.match(/<cite>/g) || []).length
     const closeTags = (annotated.match(/<\/cite>/g) || []).length
     
     expect(openTags).toBe(closeTags) // Should be balanced
-    expect(openTags).toBe(3) // Should have 3 citations
+    expect(openTags).toBe(1) // Should have 1 citation
     
     // Check that the full citation is properly wrapped
-    expect(annotated).toContain('<cite>29 C.F.R. §§ 778.113, <cite>778.114</cite>, <cite>778.115</cite></cite>')
+    expect(annotated).toBe('See <cite>29 C.F.R. §§ 778.113, 778.114, 778.115</cite> for details.')
   })
 
-  test('should handle deeply nested citations', () => {
+  test('should handle multi-section U.S.C. citations as single citation', () => {
     const text = 'See 15 U.S.C. §§ 78a, 78b, 78c for reference.'
     const citations = getCitations(text)
+    
+    // Multi-section citations are now kept as single citations
+    expect(citations.length).toBe(1)
     
     const annotated = annotateCitations(text, {
       annotateFunc: (citation, text) => `<cite data-id="${citation.metadata.section}">${text}</cite>`
@@ -55,7 +54,10 @@ describe('Overlapping citation annotation', () => {
     const closeTags = (annotated.match(/<\/cite>/g) || []).length
     
     expect(openTags).toBe(closeTags)
-    expect(openTags).toBe(citations.length)
+    expect(openTags).toBe(1)
+    
+    // Should contain the multi-section citation as a single annotation
+    expect(annotated).toBe('See <cite data-id="78a, 78b, 78c">15 U.S.C. §§ 78a, 78b, 78c</cite> for reference.')
   })
 
   test('should handle non-overlapping citations correctly', () => {
@@ -74,9 +76,12 @@ describe('Overlapping citation annotation', () => {
     expect(annotated).toBe('See <cite>29 C.F.R. § 778.113</cite> and <cite>15 U.S.C. § 78a</cite> for details.')
   })
 
-  test('should preserve citation metadata in nested annotations', () => {
+  test('should preserve citation metadata in multi-section annotations', () => {
     const text = 'See 29 C.F.R. §§ 778.113, 778.114, 778.115 for details.'
     const citations = getCitations(text) as FullLawCitation[]
+    
+    // Should have single multi-section citation
+    expect(citations.length).toBe(1)
     
     const annotated = annotateCitations(text, {
       annotateFunc: (citation: FullLawCitation, text) => {
@@ -88,9 +93,7 @@ describe('Overlapping citation annotation', () => {
     console.log('\nMetadata preservation test:')
     console.log('Annotated:', annotated)
     
-    // Check that each citation has the correct section attribute
-    expect(annotated).toContain('section="778.113"')
-    expect(annotated).toContain('section="778.114"')
-    expect(annotated).toContain('section="778.115"')
+    // Check that the single citation has all sections in one attribute
+    expect(annotated).toBe('See <cite section="778.113, 778.114, 778.115">29 C.F.R. §§ 778.113, 778.114, 778.115</cite> for details.')
   })
 })
