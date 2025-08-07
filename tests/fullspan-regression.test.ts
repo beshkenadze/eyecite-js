@@ -65,9 +65,8 @@ describe('Full span regression tests', () => {
     // Full span should include the antecedent and pin cite
     expect(supraCitation.metadata.antecedentGuess).toBe('Smith')
     expect(supraCitation.metadata.pinCite).toBe('at 100')
-    // The implementation currently has a small offset issue with the fullSpanStart
-    // but the important thing is that fullSpanStart and fullSpanEnd are defined
-    expect(supraCitation.fullSpanStart).toBe(1) // Currently starts at "m" due to lookback calculation
+    // Full span should correctly start at the beginning of the antecedent
+    expect(supraCitation.fullSpanStart).toBe(0) // Starts at beginning of "Smith"
     expect(supraCitation.fullSpanEnd).toBe(20) // End after "at 100"
   })
   

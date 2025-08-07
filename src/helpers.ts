@@ -1,6 +1,7 @@
 import { COURTS } from './data'
 import type { CaseCitation, CitationBase, Document, Token, Tokens } from './models'
 import {
+  CaseNameCitation,
   CitationToken,
   FullCaseCitation,
   FullJournalCitation,
@@ -467,8 +468,56 @@ export function filterCitations(citations: CitationBase[]): CitationBase[] {
     }
   }
 
+  // Handle adjacent CaseNameCitation + FullCaseCitation combinations
+  // These should be merged into a single FullCaseCitation
+  const mergedCitations: CitationBase[] = []
+  
+  for (let i = 0; i < filteredCitations.length; i++) {
+    const citation = filteredCitations[i]
+    
+    // Check if this is a CaseNameCitation followed immediately by a FullCaseCitation
+    if (citation instanceof CaseNameCitation && i + 1 < filteredCitations.length) {
+      const nextCitation = filteredCitations[i + 1]
+      
+      if (nextCitation instanceof FullCaseCitation) {
+        const caseNameSpan = citation.fullSpan()
+        const fullCaseSpan = nextCitation.fullSpan()
+        
+        // Check if they are adjacent (case name ends where full case begins)
+        if (caseNameSpan.end <= fullCaseSpan.start && fullCaseSpan.start - caseNameSpan.end <= 2) {
+          // Merge the case name into the full case citation metadata
+          const mergedMetadata = { ...nextCitation.metadata }
+          if (citation.metadata.plaintiff && !mergedMetadata.plaintiff) {
+            mergedMetadata.plaintiff = citation.metadata.plaintiff
+          }
+          if (citation.metadata.defendant && !mergedMetadata.defendant) {
+            mergedMetadata.defendant = citation.metadata.defendant
+          }
+          
+          // Create a new FullCaseCitation with extended span
+          const mergedCitation = new FullCaseCitation(
+            nextCitation.token,
+            nextCitation.index,
+            nextCitation.exactEditions || [],
+            nextCitation.variationEditions || [],
+            mergedMetadata
+          )
+          // Update the spans manually since the constructor doesn't take span parameters
+          mergedCitation.fullSpanStart = caseNameSpan.start
+          mergedCitation.fullSpanEnd = fullCaseSpan.end
+          
+          mergedCitations.push(mergedCitation)
+          i++ // Skip the next citation since we merged it
+          continue
+        }
+      }
+    }
+    
+    mergedCitations.push(citation)
+  }
+
   // Final sort by position for output consistency
-  return filteredCitations.sort((a, b) => a.span().start - b.span().start)
+  return mergedCitations.sort((a, b) => a.span().start - b.span().start)
 }
 
 /**

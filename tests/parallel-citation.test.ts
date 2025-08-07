@@ -42,17 +42,12 @@ describe('Parallel Citation Support', () => {
     for (const testCase of testCases) {
       const citations = getCitations(testCase.text)
       
-      console.log(`\nTesting: "${testCase.text}"`)
       expect(citations.length).toBe(1)
       
       const citation = citations[0]
       expect(citation).toBeInstanceOf(FullCaseCitation)
       
       if (citation instanceof FullCaseCitation) {
-        console.log(`  Volume: ${citation.volume}`)
-        console.log(`  Reporter: ${citation.reporter}`)
-        console.log(`  Page: ${citation.page}`)
-        console.log(`  Groups: ${JSON.stringify(citation.groups)}`)
         
         expect(citation.volume).toBe(testCase.expectedVolume)
         expect(citation.page).toBe(testCase.expectedPage)
@@ -78,9 +73,6 @@ describe('Parallel Citation Support', () => {
     for (const text of fullCitations) {
       const citations = getCitations(text)
       
-      console.log(`\nFull citation: "${text}"`)
-      console.log(`  Found ${citations.length} citation(s)`)
-      
       expect(citations.length).toBeGreaterThan(0)
       
       if (citations.length > 0) {
@@ -88,15 +80,9 @@ describe('Parallel Citation Support', () => {
         expect(citation).toBeInstanceOf(FullCaseCitation)
         
         if (citation instanceof FullCaseCitation) {
-          console.log(`  Volume: ${citation.volume}`)
-          console.log(`  Reporter: ${citation.reporter}`)
-          console.log(`  Page: ${citation.page}`)
-          console.log(`  Case name: ${citation.metadata.plaintiff} v. ${citation.metadata.defendant}`)
-          console.log(`  Year: ${citation.metadata.year}`)
-          
-          if (citation.groups?.reporter_nominative) {
-            console.log(`  Parallel reporter: ${citation.groups.volume_nominative || ''} ${citation.groups.reporter_nominative}`)
-          }
+          // Basic validation without console output
+          expect(citation.volume).toBeDefined()
+          expect(citation.page).toBeDefined()
         }
       }
     }
@@ -118,14 +104,11 @@ describe('Parallel Citation Support', () => {
 
     for (const text of edgeCases) {
       const citations = getCitations(text)
-      console.log(`\nEdge case: "${text}" -> ${citations.length} citation(s)`)
-      
+      // Basic validation for edge cases
       if (citations.length > 0 && citations[0] instanceof FullCaseCitation) {
         const citation = citations[0] as FullCaseCitation
-        console.log(`  Parsed as: ${citation.volume} ${citation.reporter} ${citation.page}`)
-        if (citation.groups?.reporter_nominative) {
-          console.log(`  Nominative: ${citation.groups.volume_nominative || ''} ${citation.groups.reporter_nominative}`)
-        }
+        expect(citation.volume).toBeDefined()
+        expect(citation.page).toBeDefined()
       }
     }
   })

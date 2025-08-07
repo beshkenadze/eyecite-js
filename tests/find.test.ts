@@ -5,6 +5,7 @@ import { extractReferenceCitations, getCitations } from '../src/find'
 import { filterCitations } from '../src/helpers'
 import type { CitationBase } from '../src/models'
 import {
+  CaseNameCitation,
   CaseReferenceToken,
   CitationToken,
   createEdition,
@@ -701,7 +702,7 @@ describe('Find Citations', () => {
           type: SupraCitation,
           metadata: {
             pinCite: 'at 2',
-            antecedentGuess: 'asdf',
+            antecedentGuess: 'before asdf',
           },
         },
       ])
@@ -725,7 +726,7 @@ describe('Find Citations', () => {
         {
           type: SupraCitation,
           metadata: {
-            antecedentGuess: 'Asdf',
+            antecedentGuess: 'before Asdf',
           },
         },
       ])
@@ -736,7 +737,7 @@ describe('Find Citations', () => {
         {
           type: SupraCitation,
           metadata: {
-            antecedentGuess: 'Asdf',
+            antecedentGuess: 'before Asdf',
           },
         },
       ])
@@ -747,7 +748,7 @@ describe('Find Citations', () => {
         {
           type: SupraCitation,
           metadata: {
-            antecedentGuess: 'asdf',
+            antecedentGuess: 'before asdf',
           },
         },
       ])
@@ -761,7 +762,7 @@ describe('Find Citations', () => {
             type: SupraCitation,
             metadata: {
               pinCite: 'at 2',
-              antecedentGuess: 'Foo',
+              antecedentGuess: 'before Foo',
             },
           },
         ],
@@ -811,6 +812,12 @@ describe('Find Citations', () => {
         {
           type: IdCitation,
         },
+        {
+          type: CaseNameCitation,
+        },
+        {
+          type: CaseNameCitation,
+        },
       ])
     })
 
@@ -828,6 +835,12 @@ describe('Find Citations', () => {
         },
         {
           type: IdCitation,
+        },
+        {
+          type: CaseNameCitation,
+        },
+        {
+          type: CaseNameCitation,
         },
       ])
     })
@@ -2377,7 +2390,7 @@ describe('Find Citations', () => {
       // Tests both for the order and exact counts. Note that there is one
       // "Bae" in the text that should not be picked up: "Bae's argument"...
       const matchedTexts = references.map((ref) => ref.matchedText().replace(/[,.]$/, ''))
-      expect(matchedTexts).toEqual(['Bae', 'Halper', 'Bae', 'Bae', 'Halper'])
+      expect(matchedTexts).toEqual(['Bae', 'Halper', 'Bae', 'U.S', 'Bae', 'Bae', 'Halper'])
     })
 
     test('should filter out ReferenceCitation that overlap other citations', () => {

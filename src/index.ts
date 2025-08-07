@@ -12,6 +12,7 @@ export { disambiguateReporters, filterCitations } from './helpers'
 // Core models and types
 export {
   CaseCitation,
+  CaseNameCitation,
   CitationBase,
   CitationToken,
   DOLOpinionCitation,
@@ -40,6 +41,7 @@ export {
   type Tokens,
   type ResourceType,
   // Token classes
+  CaseNameToken,
   SectionToken,
   ParagraphToken,
   LawCitationToken,

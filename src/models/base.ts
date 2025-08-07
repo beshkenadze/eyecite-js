@@ -116,6 +116,7 @@ export class Metadata {
   court?: string
   plaintiff?: string
   defendant?: string
+  subject?: string
   extra?: string
   antecedentGuess?: string
   resolvedCaseNameShort?: string

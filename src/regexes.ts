@@ -81,8 +81,9 @@ export const ID_LAW_REGEX = spaceBoundariesRe(`id\\.\\s*(?<section_marker>§§?|
 // Id at page regex - for patterns like "Id. at 123"
 export const ID_AT_PAGE_REGEX = spaceBoundariesRe('id\\.\\s*at\\s*(?<page>\\d+(?:\\s*[-–—]\\s*\\d+)?)')
 
-// Supra token regex
-export const SUPRA_REGEX = spaceBoundariesRe(stripPunctuationRe('supra'))
+// Supra token regex - Enhanced to capture case names before "supra"
+// Pattern should not capture common introductory words like "See", "citing", etc.
+export const SUPRA_REGEX = spaceBoundariesRe(`(?:(?<antecedent>(?!(?:see|citing|quoting|but\\s+see|cf\\.?)\\s)[A-Za-z][\\w\\-.]*(?:\\s+(?!(?:see|citing|quoting|but\\s+see|cf\\.?)\\s)[A-Za-z][\\w\\-.]*)*),?\\s+)?${stripPunctuationRe('supra')}`)
 
 // Stop words
 export const STOP_WORDS = [
@@ -352,3 +353,62 @@ export const POST_JOURNAL_CITATION_REGEX = `
 
 // Defendant year regex
 export const DEFENDANT_YEAR_REGEX = '(?<defendant>.*)\\s\\((?<year>\\d{4})\\)$'
+
+// Case name patterns for case name only citations
+// Business entity suffixes
+const BUSINESS_ENTITIES = [
+  'Inc',
+  'Corp',
+  'LLC',
+  'LLP',
+  'LP',
+  'Co',
+  'Ltd',
+  'Company',
+  'Corporation',
+  'Partnership',
+  'Associates',
+  'Group',
+  'Holdings',
+  'Enterprises',
+  'Solutions',
+  'Services',
+  'Systems',
+  'Technologies',
+  'International',
+  'America',
+  'Worldwide',
+].join('|')
+
+// Common legal abbreviations
+const LEGAL_ABBREVIATIONS = [
+  'et al',
+  'ex rel',
+  'ex parte',
+  'in re',
+  're',
+  'on behalf of',
+  'for use of',
+  'd/b/a',
+  'aka',
+  'f/k/a',
+  'n/k/a',
+  'successor to',
+  'formerly',
+].join('|')
+
+// Simplified party name patterns
+const WORD_PATTERN = `[A-Za-z][A-Za-z0-9'.-]*`
+const PARTY_WORDS = `${WORD_PATTERN}(?:\\s+${WORD_PATTERN})*`
+const BUSINESS_SUFFIX = `(?:\\s+(?:${BUSINESS_ENTITIES})\\.?)?`
+const PARTY_NAME_PATTERN = `${PARTY_WORDS}${BUSINESS_SUFFIX}`
+
+// Case name patterns - prevent capturing pin cites as part of party names
+export const CASE_NAME_V_PATTERN = `(?<plaintiff>${PARTY_NAME_PATTERN})\\s+v\\.?\\s+(?<defendant>${PARTY_NAME_PATTERN})(?=\\s|[.,;:!?)\\]\\}]|$|\\s+(?:at|on|in|for|under|with|by|against|${LEGAL_ABBREVIATIONS}))`
+
+export const CASE_NAME_IN_RE_PATTERN = `(?:In\\s+re|Re)\\s+(?<inre_subject>${PARTY_NAME_PATTERN})(?=\\s|[.,;:!?)\\]\\}]|$|\\s+(?:${LEGAL_ABBREVIATIONS}))`
+
+export const CASE_NAME_EX_PARTE_PATTERN = `Ex\\s+parte\\s+(?<exparte_subject>${PARTY_NAME_PATTERN})(?=\\s|[.,;:!?)\\]\\}]|$|\\s+(?:${LEGAL_ABBREVIATIONS}))`
+
+// Combined case name regex with word boundaries
+export const CASE_NAME_ONLY_REGEX = spaceBoundariesRe(`(?:${CASE_NAME_V_PATTERN}|${CASE_NAME_IN_RE_PATTERN}|${CASE_NAME_EX_PARTE_PATTERN})`)
