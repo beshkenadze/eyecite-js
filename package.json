@@ -32,6 +32,10 @@
     "typecheck": "tsc --noEmit",
     "dev": "bun run src/index.ts",
     "clean": "rm -rf dist",
+    "bump": "bun run scripts/bump-version.ts",
+    "bump:patch": "bun run scripts/bump-version.ts patch",
+    "bump:minor": "bun run scripts/bump-version.ts minor",
+    "bump:major": "bun run scripts/bump-version.ts major",
     "prepublishOnly": "bun run build",
     "version": "bun run build",
     "postversion": "git push && git push --tags"
