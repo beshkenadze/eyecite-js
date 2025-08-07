@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set remote URL with PAT token for push authentication by @beshkenadze
 
 
+### 📚 Documentation
+
+- Update CHANGELOG.md
+
+
 ### 🚜 Refactor
 
 - Improve changelog workflow with proper bot configuration by @beshkenadze
