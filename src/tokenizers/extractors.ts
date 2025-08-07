@@ -1,5 +1,6 @@
 import {
   CitationToken,
+  CaseNameToken,
   DOLOpinionToken,
   type Edition,
   IdLawToken,
@@ -13,6 +14,7 @@ import {
   SupraToken,
 } from '../models'
 import {
+  CASE_NAME_ONLY_REGEX,
   DOL_OPINION_REGEX,
   ID_AT_PAGE_REGEX,
   ID_LAW_REGEX,
@@ -61,6 +63,8 @@ export function tokenIsFromNominativeReporter(token: any): boolean {
 // Create extractors for special token types
 export function createSpecialExtractors(): BaseTokenExtractor[] {
   return [
+    // Note: Case name only token extractor removed - case names will only be recognized as references when full citations exist
+    
     // Id law token extractor - must come before regular Id token
     new BaseTokenExtractor(ID_LAW_REGEX, IdLawToken, {}, 2), // re.I = 2
 

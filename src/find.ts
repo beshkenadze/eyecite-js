@@ -10,6 +10,7 @@ import {
 } from './helpers'
 import type { CaseCitation, CitationBase, Document, FullCitation, Tokens } from './models'
 import {
+  CaseNameCitation,
   CaseReferenceToken,
   CitationToken,
   DOLOpinionCitation,
@@ -254,16 +255,25 @@ export function getCitations(
   // Filter citations first (before adding references)
   let filteredCitations = filterCitations(citations)
 
-  // After filtering, extract reference citations from markup
-  if (document.markupText) {
-    const fullCitations = filteredCitations.filter(
-      (c) => c instanceof FullCaseCitation,
-    ) as FullCaseCitation[]
-    const references = findReferenceCitationsFromMarkup(document, fullCitations)
+  // Second pass: Extract reference citations based on full citations found
+  const fullCitations = filteredCitations.filter(
+    (c) => c instanceof FullCaseCitation,
+  ) as FullCaseCitation[]
+  
+  if (fullCitations.length > 0) {
+    // Extract case name references based on full citations
+    const caseNameReferences = extractCaseNameReferenceCitations(document, fullCitations)
+    
+    // Extract reference citations from markup if available
+    let markupReferences: ReferenceCitation[] = []
+    if (document.markupText) {
+      markupReferences = findReferenceCitationsFromMarkup(document, fullCitations)
+    }
 
-    // Add references and filter again to handle any new overlaps
-    if (references.length > 0) {
-      filteredCitations.push(...references)
+    // Combine all reference citations and filter to avoid duplicates
+    const allReferences = [...caseNameReferences, ...markupReferences]
+    if (allReferences.length > 0) {
+      filteredCitations.push(...allReferences)
       filteredCitations = filterCitations(filteredCitations)
     }
   }
@@ -489,6 +499,236 @@ function extractPincitedReferenceCitations(
 }
 
 /**
+ * Extract case name reference citations based on full citations found in the text.
+ * Only recognizes case names when we have the full citation as context.
+ */
+function extractCaseNameReferenceCitations(
+  document: Document,
+  fullCitations: FullCaseCitation[],
+): CaseNameCitation[] {
+  if (!document.plainText || fullCitations.length === 0) {
+    return []
+  }
+
+  const references: CaseNameCitation[] = []
+  const usedPositions = new Set<number>()
+
+  // For each full citation, look for case name references after it
+  for (const citation of fullCitations) {
+    const referenceFields = getReferenceCitationFields(citation)
+    
+    if (referenceFields.length === 0) continue
+
+    // Search for case name patterns after the full citation
+    for (const field of referenceFields) {
+      const caseNameReferences = findCaseNameMatches(
+        document.plainText, 
+        field.name, 
+        citation.span().end,
+        usedPositions
+      )
+      
+      for (const match of caseNameReferences) {
+        const reference = createCaseNameReference(match, field, citation)
+        if (reference) {
+          references.push(reference)
+          usedPositions.add(match.start)
+        }
+      }
+    }
+  }
+
+  return references
+}
+
+/**
+ * Get the case name fields that can be used for reference matching
+ */
+function getReferenceCitationFields(citation: FullCaseCitation): Array<{name: string, field: string}> {
+  const fields: Array<{name: string, field: string}> = []
+  
+  // Get party names from metadata
+  if (citation.metadata.plaintiff && isValidName(citation.metadata.plaintiff)) {
+    fields.push({ name: citation.metadata.plaintiff, field: 'plaintiff' })
+  }
+  
+  if (citation.metadata.defendant && isValidName(citation.metadata.defendant)) {
+    fields.push({ name: citation.metadata.defendant, field: 'defendant' })
+  }
+  
+  // Get resolved case names if available
+  if (citation.metadata.resolvedCaseNameShort && isValidName(citation.metadata.resolvedCaseNameShort)) {
+    fields.push({ name: citation.metadata.resolvedCaseNameShort, field: 'resolvedCaseNameShort' })
+  }
+  
+  if (citation.metadata.resolvedCaseName && isValidName(citation.metadata.resolvedCaseName)) {
+    fields.push({ name: citation.metadata.resolvedCaseName, field: 'resolvedCaseName' })
+  }
+  
+  return fields
+}
+
+/**
+ * Find case name matches in the text with some flexibility for abbreviations
+ */
+function findCaseNameMatches(
+  text: string, 
+  caseName: string, 
+  searchStartPos: number,
+  usedPositions: Set<number>
+): Array<{text: string, start: number, end: number}> {
+  const matches: Array<{text: string, start: number, end: number}> = []
+  
+  // Create variations of the case name for matching
+  const variations = createCaseNameVariations(caseName)
+  
+  for (const variation of variations) {
+    // Make the regex more flexible to handle punctuation variations
+    let flexiblePattern = variation
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special regex chars
+    
+    // Make periods optional and allow for optional comma after them
+    flexiblePattern = flexiblePattern.replace(/\\\./g, '\\.?,?')
+    
+    // Make existing commas optional
+    flexiblePattern = flexiblePattern.replace(/,/g, ',?')
+    
+    // Allow flexible whitespace
+    flexiblePattern = flexiblePattern.replace(/\s+/g, '\\s+')
+    
+    // Look for word boundaries and ensure it's not part of a larger word
+    const regex = new RegExp(`\\b${flexiblePattern}\\b`, 'gi')
+    
+    let match: RegExpExecArray | null
+    while ((match = regex.exec(text)) !== null) {
+      const start = match.index
+      const end = start + match[0].length
+      
+      // Only consider matches after the full citation
+      if (start <= searchStartPos) continue
+      
+      // Skip if already used
+      if (usedPositions.has(start)) continue
+      
+      // Skip if it looks like part of another citation
+      if (isPartOfOtherCitation(text, start, end)) continue
+      
+      matches.push({
+        text: match[0],
+        start,
+        end
+      })
+    }
+  }
+  
+  return matches
+}
+
+/**
+ * Create variations of a case name for flexible matching
+ */
+function createCaseNameVariations(caseName: string): string[] {
+  const variations = [caseName.trim()]
+  
+  // Add common abbreviation patterns
+  const commonAbbreviations = [
+    // Company abbreviations
+    ['Company', 'Co.'],
+    ['Corporation', 'Corp.'],
+    ['Incorporated', 'Inc.'],
+    ['Limited', 'Ltd.'],
+    ['Associates', 'Assocs.'],
+    ['Association', 'Assn.'],
+    // Other common abbreviations
+    ['United States', 'U.S.'],
+    ['Department', 'Dept.'],
+    ['Government', 'Gov.'],
+  ]
+  
+  // Create variations with abbreviations
+  for (const [full, abbrev] of commonAbbreviations) {
+    if (caseName.includes(full)) {
+      variations.push(caseName.replace(full, abbrev))
+    }
+    if (caseName.includes(abbrev)) {
+      variations.push(caseName.replace(abbrev, full))
+    }
+  }
+  
+  // Remove duplicates and empty variations
+  return [...new Set(variations)].filter(v => v.trim().length > 0)
+}
+
+/**
+ * Check if a match is part of another citation pattern
+ */
+function isPartOfOtherCitation(text: string, start: number, end: number): boolean {
+  // Get context around the match
+  const beforeText = text.substring(Math.max(0, start - 50), start)
+  const afterText = text.substring(end, Math.min(text.length, end + 50))
+  
+  // Skip if followed by "v." or "v " (it's part of a full case name)
+  if (/^\s*v\.?\s/.test(afterText)) return true
+  
+  // Skip if followed by supra
+  if (/^\s*,?\s*supra\b/i.test(afterText)) return true
+  
+  // Skip if followed by a reporter pattern (e.g., "Twombly, 550 U.S. 544")
+  if (/^,?\s*\d+\s+[A-Z]/.test(afterText)) return true
+  
+  // Skip if it's preceded by citation signals
+  if (/\b(?:see|citing|accord|cf\.|but see|compare|contra|e\.g\.)\s*$/i.test(beforeText)) return true
+  
+  return false
+}
+
+/**
+ * Create a CaseNameCitation from a match
+ */
+function createCaseNameReference(
+  match: {text: string, start: number, end: number},
+  field: {name: string, field: string},
+  originalCitation: FullCaseCitation
+): CaseNameCitation | null {
+  // Create a minimal token for the case name that implements the Token interface
+  const token = {
+    data: match.text,
+    start: match.start,
+    end: match.end,
+    groups: {
+      [field.field]: field.name
+    },
+    // Add required methods for Token interface
+    toString: () => match.text,
+  }
+  
+  // Create metadata
+  const metadata: any = {
+    [field.field]: field.name
+  }
+  
+  // Look for pin cite after the case name in the document text
+  const document = originalCitation.document
+  if (document?.plainText) {
+    const afterText = document.plainText.substring(match.end)
+    const pinCiteMatch = afterText.match(/^\s*(?:,\s*)?(at\s+\d+(?:[-–—]\d+)?)/i)
+    if (pinCiteMatch) {
+      metadata.pinCite = pinCiteMatch[1]
+    }
+  }
+  
+  return new CaseNameCitation(
+    token as any, // Cast to satisfy the interface
+    0, // index (not relevant for references)
+    metadata,
+    match.start, // spanStart
+    match.end, // spanEnd
+    match.start, // fullSpanStart
+    match.end, // fullSpanEnd
+  )
+}
+
+/**
  * Extract a full citation from the document
  */
 function extractFullCitation(document: Document, index: number): FullCitation {
@@ -640,12 +880,14 @@ function extractShortformCitation(document: Document, index: number): ShortCaseC
  * Extract a supra citation from the document
  */
 function extractSupraCitation(words: Tokens, index: number): SupraCitation {
-  // For supra citations, we need simpler pin cite extraction
-  // Look for patterns like ", at 2" or ", at 2-3" after supra
+  const supraToken = words[index] as SupraToken
   let pinCite: string | undefined
-  const indexToken = words[index]
-  let spanEnd = typeof indexToken === 'string' ? 0 : indexToken.end
   let parenthetical: string | undefined
+  let antecedentGuess: string | undefined
+  let volume: string | undefined
+  let spanEnd = supraToken.end
+  let fullSpanStart = supraToken.start
+  let fullSpanEnd = supraToken.end
 
   // Build text after supra token
   let afterText = ''
@@ -657,7 +899,8 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
   const pinCiteMatch = afterText.match(/^,?\s*((?:at\s+)?\d+(?:[-–—]\d+)?(?:\s*[&,]\s*\d+(?:[-–—]\d+)?)*)/)
   if (pinCiteMatch?.[1]) {
     pinCite = pinCiteMatch[1].trim()
-    spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + pinCiteMatch[0].length
+    spanEnd = supraToken.end + pinCiteMatch[0].length
+    fullSpanEnd = spanEnd
 
     // Check for parenthetical after pin cite
     const remainingText = afterText.substring(pinCiteMatch[0].length)
@@ -665,68 +908,73 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
     if (parenMatch) {
       parenthetical = parenMatch[1]
       spanEnd += parenMatch[0].length
+      fullSpanEnd = spanEnd
     }
   } else {
     // No pin cite, just check for parenthetical
     const parenMatch = afterText.match(/^\s*\(([^)]+)\)/)
     if (parenMatch) {
       parenthetical = parenMatch[1]
-      spanEnd = (typeof indexToken === 'string' ? 0 : indexToken.end) + parenMatch[0].length
+      spanEnd = supraToken.end + parenMatch[0].length
+      fullSpanEnd = spanEnd
     }
   }
-  let antecedentGuess: string | undefined
-  let volume: string | undefined
-  let antecedentLength = 0
 
-  // Look backward for antecedent and/or volume
-  // Simple approach: look for pattern like "Foo" or "Foo, 123" before supra
-  if (index > 0) {
-    // Build text from previous tokens
-    let lookback = ''
-    let tokenCount = 0
-    for (let i = index - 1; i >= Math.max(0, index - 5); i--) {
-      const token = words[i]
-      const tokenStr = String(token)
+  // Check if the token itself captured an antecedent (from the enhanced regex)
+  if (supraToken.groups.antecedent) {
+    antecedentGuess = supraToken.groups.antecedent
+    // The token includes the antecedent, so fullSpanStart should be at the token start
+    fullSpanStart = supraToken.start
+  } else {
+    // Look backward for antecedent and/or volume (fallback behavior)
+    // Simple approach: look for pattern like "Foo" or "Foo, 123" before supra
+    if (index > 0) {
+      // Build text from previous tokens
+      let lookback = ''
+      let tokenCount = 0
+      for (let i = index - 1; i >= Math.max(0, index - 5); i--) {
+        const token = words[i]
+        const tokenStr = String(token)
 
-      // Skip whitespace-only tokens at the beginning
-      if (tokenStr.trim() === '' && lookback === '') continue
+        // Skip whitespace-only tokens at the beginning
+        if (tokenStr.trim() === '' && lookback === '') continue
 
-      lookback = tokenStr + lookback
-      tokenCount++
+        lookback = tokenStr + lookback
+        tokenCount++
 
-      // Stop after a reasonable amount
-      if (tokenCount >= 3 || lookback.length > 30) break
-    }
+        // Stop after a reasonable amount
+        if (tokenCount >= 3 || lookback.length > 30) break
+      }
 
-    // Try to extract antecedent and volume from lookback text
-    // Match patterns like "Foo, 123 " or "Foo, " or "123 " or "Foo "
-    const patterns = [
-      /(\w[\w\-.]*),?\s+(\d+)\s*$/, // word, optional comma, volume
-      /(\d+)\s*$/, // just volume
-      /(\w[\w\-.]*),?\s*$/, // just word with optional comma
-    ]
+      // Try to extract antecedent and volume from lookback text
+      // Match patterns like "Foo, 123 " or "Foo, " or "123 " or "Foo "
+      const patterns = [
+        /(\w[\w\-.]*(?:\s+\w[\w\-.]*)*),?\s+(\d+)\s*$/, // Enhanced: multi-word antecedent, optional comma, volume
+        /(\d+)\s*$/, // just volume
+        /(\w[\w\-.]*(?:\s+\w[\w\-.]*)*),?\s*$/, // Enhanced: multi-word antecedent with optional comma
+      ]
 
-    for (const pattern of patterns) {
-      const m = lookback.match(pattern)
-      if (m) {
-        if (m[2]) {
-          // Both antecedent and volume
-          antecedentGuess = m[1]
-          volume = m[2]
-        } else if (/^\d+$/.test(m[1])) {
-          // Just volume
-          volume = m[1]
-        } else {
-          // Just antecedent
-          antecedentGuess = m[1]
+      for (const pattern of patterns) {
+        const m = lookback.match(pattern)
+        if (m) {
+          if (m[2]) {
+            // Both antecedent and volume
+            antecedentGuess = m[1]
+            volume = m[2]
+          } else if (/^\d+$/.test(m[1])) {
+            // Just volume
+            volume = m[1]
+          } else {
+            // Just antecedent
+            antecedentGuess = m[1]
+          }
+          // Adjust fullSpanStart to include the antecedent
+          fullSpanStart = supraToken.start - m[0].length
+          break
         }
-        antecedentLength = m[0].length
-        break
       }
     }
   }
-
-  const supraToken = words[index] as SupraToken
 
   return new SupraCitation(
     supraToken,
@@ -739,8 +987,8 @@ function extractSupraCitation(words: Tokens, index: number): SupraCitation {
     },
     undefined, // spanStart
     spanEnd, // spanEnd
-    supraToken.start - antecedentLength, // fullSpanStart
-    spanEnd || (typeof supraToken === 'string' ? 0 : supraToken.end), // fullSpanEnd
+    fullSpanStart, // fullSpanStart
+    fullSpanEnd, // fullSpanEnd
   )
 }
 
@@ -1613,6 +1861,7 @@ export function findReferenceCitationsFromMarkup(
 
   return references
 }
+
 
 /**
  * Escape special regex characters in a string

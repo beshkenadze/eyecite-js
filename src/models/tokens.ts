@@ -97,20 +97,10 @@ export class SupraToken extends Token {
     _extra: Record<string, unknown>,
     offset = 0,
   ): SupraToken {
-    // Get the captured supra (group 1)
-    const captureIndex = match.length > 1 && match[1] !== undefined ? 1 : 0
-    const matchText = match[captureIndex]
-
-    // Calculate start position based on the full match
-    let start = (match.index || 0) + offset
-    if (captureIndex > 0 && match[0]) {
-      // Find where the capture starts within the full match
-      const captureOffset = match[0].indexOf(match[captureIndex])
-      if (captureOffset > 0) {
-        start += captureOffset
-      }
-    }
-
+    // For supra tokens, always use the full match to capture the complete pattern
+    // including any antecedent (e.g., "Smith, supra" not just "Smith")
+    const matchText = match[0]
+    const start = (match.index || 0) + offset
     const end = start + matchText.length
 
     // Extract named groups
@@ -352,5 +342,19 @@ export class DOLOpinionToken extends Token {
     const groups = match.groups || {}
 
     return new DOLOpinionToken(matchText, start, end, groups)
+  }
+}
+
+export class CaseNameToken extends Token {
+  static fromMatch(match: RegExpExecArray, _extra: Record<string, unknown>, offset = 0): Token {
+    // For case name citations, use the full match
+    const matchText = match[0]
+    const start = (match.index || 0) + offset
+    const end = start + matchText.length
+
+    // Extract named groups - handle different case name patterns
+    const groups = match.groups || {}
+
+    return new CaseNameToken(matchText, start, end, groups)
   }
 }

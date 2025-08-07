@@ -447,3 +447,60 @@ export class DOLOpinionCitation extends CitationBase {
     return parts.join('')
   }
 }
+
+export class CaseNameCitation extends ReferenceCitation {
+  get plaintiff(): string {
+    return this.groups.plaintiff || this.metadata.plaintiff || ''
+  }
+
+  get defendant(): string {
+    return this.groups.defendant || this.metadata.defendant || ''
+  }
+
+  get subject(): string {
+    return this.groups.inre_subject || this.groups.exparte_subject || this.metadata.subject || ''
+  }
+
+  hash(): string {
+    return hashSha256({
+      plaintiff: this.plaintiff,
+      defendant: this.defendant,
+      subject: this.subject,
+      class: this.constructor.name,
+    })
+  }
+
+  correctedCitationFull(): string {
+    const parts = []
+    
+    if (this.plaintiff && this.defendant) {
+      parts.push(`${this.plaintiff} v. ${this.defendant}`)
+    } else if (this.subject) {
+      // Check if it's an "In re" or "Ex parte" case
+      if (this.matchedText().toLowerCase().startsWith('in re') || 
+          this.matchedText().toLowerCase().startsWith('re ')) {
+        parts.push(`In re ${this.subject}`)
+      } else if (this.matchedText().toLowerCase().startsWith('ex parte')) {
+        parts.push(`Ex parte ${this.subject}`)
+      } else {
+        parts.push(this.subject)
+      }
+    } else {
+      parts.push(this.matchedText())
+    }
+
+    if (this.metadata.pinCite) {
+      parts.push(`, ${this.metadata.pinCite}`)
+    }
+
+    if (this.metadata.parenthetical) {
+      parts.push(` (${this.metadata.parenthetical})`)
+    }
+
+    return parts.join('')
+  }
+
+  formatted(): string {
+    return this.correctedCitationFull()
+  }
+}

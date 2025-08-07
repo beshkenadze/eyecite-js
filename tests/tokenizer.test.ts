@@ -53,7 +53,8 @@ describe('Tokenizer', () => {
 
       const supraTokens = citationTokens.filter(([_, token]) => token instanceof SupraToken)
       expect(supraTokens).toHaveLength(1)
-      expect(supraTokens[0][1].data).toBe('supra')
+      // The token data contains the full match including antecedent
+      expect(supraTokens[0][1].data).toBe('Bush, supra,')
     })
 
     test('should tokenize text with stop words', () => {
