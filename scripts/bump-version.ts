@@ -133,6 +133,25 @@ async function main() {
     writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n')
     console.log(`${colors.green}✓ Updated package.json${colors.reset}`)
     
+    // Generate changelog with git-cliff
+    const changelogOps = await question('\nDo you want to generate/update CHANGELOG? (y/n): ')
+    if (changelogOps.toLowerCase() === 'y') {
+      try {
+        console.log(`${colors.cyan}Generating changelog...${colors.reset}`)
+        
+        // Generate changelog for the new version
+        await $`git-cliff --tag v${newVersion} --output CHANGELOG.md`
+        console.log(`${colors.green}✓ Generated CHANGELOG.md${colors.reset}`)
+        
+        // Stage the changelog
+        await $`git add CHANGELOG.md`
+        console.log(`${colors.green}✓ Staged CHANGELOG.md${colors.reset}`)
+      } catch (error) {
+        console.error(`${colors.red}Changelog generation failed:${colors.reset}`, error)
+        console.log(`${colors.yellow}You can generate it manually later with: git-cliff --tag v${newVersion} --output CHANGELOG.md${colors.reset}`)
+      }
+    }
+    
     // Ask about git operations
     const gitOps = await question('\nDo you want to commit and tag? (y/n): ')
     if (gitOps.toLowerCase() === 'y') {

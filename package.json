@@ -36,6 +36,10 @@
     "bump:patch": "bun run scripts/bump-version.ts patch",
     "bump:minor": "bun run scripts/bump-version.ts minor",
     "bump:major": "bun run scripts/bump-version.ts major",
+    "changelog": "git-cliff --output CHANGELOG.md",
+    "changelog:unreleased": "git-cliff --unreleased --output CHANGELOG.md",
+    "changelog:preview": "git-cliff --unreleased",
+    "release-notes": "git-cliff --latest --strip all",
     "prepublishOnly": "bun run build",
     "version": "bun run build",
     "postversion": "git push && git push --tags"
@@ -78,6 +82,7 @@
     "@biomejs/biome": "^2.1.1",
     "@types/bun": "^1.2.18",
     "@types/diff-match-patch": "^1.0.36",
+    "git-cliff": "^2.10.0",
     "typescript": "^5.8.3"
   },
   "engines": {
