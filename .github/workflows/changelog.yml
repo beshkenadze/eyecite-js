@@ -1,9 +1,12 @@
 name: Update Changelog
 
 on:
+  # Only run on version tags and releases, NOT on every push!
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
