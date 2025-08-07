@@ -46,9 +46,14 @@ jobs:
           
       - name: Commit and Push (with PAT)
         if: steps.check-token.outputs.has_pat == 'true'
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git config --local user.name 'github-actions[bot]'
           git config --local user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Set the remote URL with the PAT token
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/beshkenadze/eyecite-js.git
           
           # Check if CHANGELOG.md exists and has changes
           if [ -f CHANGELOG.md ]; then
