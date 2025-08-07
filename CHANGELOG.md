@@ -1,144 +1,197 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to eyecite-js will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-- GitHub Actions workflows for CI/CD
-- Automated version management with tag-based releases
-- Support for alpha, beta, and rc prerelease tags
+### ⚙️ Miscellaneous Tasks
+
+- Add bump scripts to package.json by @beshkenadze
+
+
+### ⚡ Features
+
+- Add comprehensive short form citation support by @beshkenadze
+
+- Add interactive version bump script by @beshkenadze
+
+- Integrate git-cliff for automated changelog generation by @beshkenadze
+
+
+### 🐛 Bug Fixes
+
+- Improve GitHub Actions changelog workflows by @beshkenadze
+
+- Properly handle PAT_TOKEN availability in changelog workflow by @beshkenadze
+
+- Set remote URL with PAT token for push authentication by @beshkenadze
+
+
+### 🚜 Refactor
+
+- Improve changelog workflow with proper bot configuration by @beshkenadze
+
+
+## [2.7.6-alpha.26] - 2025-08-06
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump version to 2.7.6-alpha.26 by @beshkenadze
+
+
+### 🐛 Bug Fixes
+
+- Correct C.F.R. citation parsing to prevent false U.S.C. matches by @beshkenadze
+
+
+## [2.7.6-alpha.25] - 2025-08-06
+
+### ⚡ Features
+
+- Add Bluebook citation formatting utilities by @beshkenadze
+
+
+### 🐛 Bug Fixes
+
+- Use PAT_TOKEN for PR workflow permissions by @beshkenadze
+
 
 ## [2.7.6-alpha.24] - 2025-08-04
 
-### Added
-- Exported `LawCitationToken`, `JournalCitationToken`, `DOLOpinionToken`, and `PlaceholderCitationToken` from main index
-- These token types are now properly accessible for TypeScript users
+### ⚡ Features
 
-### Fixed
-- Fixed missing TypeScript exports for specialized token types
-- Users can now properly type-check law citation tokens and access `lawType` property
+- Export specialized token types for TypeScript users by @beshkenadze
+
+
+### 📚 Documentation
+
+- Remove migration guide references by @beshkenadze
+
 
 ## [2.7.6-alpha.23] - 2025-08-01
 
-### Added
-- New `GetCitationsOptions` interface for cleaner API usage
-- New `overlapHandling` option in `getCitations()` with three modes:
-  - `'all'` (default): Returns all citations including overlapping ones
-  - `'parent-only'`: Returns only the encompassing citations, excluding nested ones
-  - `'children-only'`: Returns only the nested citations, excluding parent citations
-- Comprehensive test suite for overlap handling options
-- Function overloading for backward compatibility
+### ⚡ Features
 
-### Fixed
-- Users can now avoid overlapping citations when using `getCitations()` directly
-- Manual annotation of multi-section citations now works correctly with `'parent-only'` option
+- [**breaking**] Refactor getCitations API to use options object by @beshkenadze
 
-### Changed
-- **IMPROVED**: `getCitations()` now accepts an options object as the second parameter (legacy signature still supported)
-  - Before: `getCitations(text, false, undefined, '', undefined, 'parent-only')`
-  - After: `getCitations(text, { overlapHandling: 'parent-only' })`
-- Exported `OverlapHandling` type and `GetCitationsOptions` interface from main index
-
-### Deprecated
-- The legacy signature with individual parameters is deprecated but still functional
 
 ## [2.7.6-alpha.22] - 2025-08-01
 
-### Fixed
-- Overlapping citation annotation now properly handles nested citations
-- Multi-section law citations (e.g., "29 C.F.R. §§ 778.113, 778.114, 778.115") are now annotated with proper HTML nesting
-- Fixed malformed HTML output when annotating citations with overlapping spans
+### 🐛 Bug Fixes
 
-### Added
-- Tree-based citation structure for handling overlapping spans
-- Bottom-up annotation processing to ensure proper nesting
-- Comprehensive test suite for overlapping citation annotation
+- Handle overlapping citations with proper HTML nesting by @beshkenadze
 
-### Changed
-- Rewrote `applyAnnotations` function to process citations from innermost to outermost
-- Enhanced annotation logic to preserve all citation information while maintaining valid HTML structure
 
 ## [2.7.6-alpha.21] - 2025-08-01
 
-### Fixed
-- Multi-section law citations (e.g., "29 C.F.R. §§ 778.113, 778.114, 778.115") now correctly return separate citations for each section
-- Fixed span position calculation for multi-section citations - each citation now has accurate start/end positions
-- Fixed overlap detection logic to allow multi-section citations from the same law source
+### 🐛 Bug Fixes
 
-### Added
-- New test suite for multi-section law citation handling
-- `areMultiSectionLawCitations` helper function to properly identify related law citations
+- Multi-section law citations now return separate citations with correct spans by @beshkenadze
 
-### Changed
-- Enhanced `extractFromTokenizedSections` to calculate accurate span positions for each section
-- Updated `filterCitations` to preserve multi-section law citations even when they have overlapping spans
 
-## [2.7.6-alpha.3] - 2024-07-18
+## [2.7.6-alpha.20] - 2025-08-01
 
-### Added
-- Support for multiple law citations with §§ pattern
-- Comprehensive test coverage for CFR multiple sections
-- Fixed PDF text cleaning for proper citation extraction
+### ⚙️ Miscellaneous Tasks
 
-### Fixed
-- CFR citations now correctly parse multiple sections (e.g., "29 C.F.R. §§ 778.113, 778.114")
-- Underscores in PDF text are now replaced with spaces instead of removed
-- All existing tests continue to pass
+- Fix major linting issues and configure Biome v2 by @beshkenadze
 
-## [2.7.6-alpha.2] - 2024-01-14
+- Bump version to 2.7.6-alpha.4 by @beshkenadze
 
-### Fixed
-- Added TypeScript declaration files (.d.ts) to the package
-- Fixed missing `types` field in package.json
-- Generated proper type definitions for all exports
+- Bump version to 2.7.6-alpha.6 by @beshkenadze
 
-## [2.7.6-alpha.1] - 2024-01-14
+- Bump version to 2.7.6-alpha.8 for testing fixed NPM token by @beshkenadze
 
-### Fixed
-- Updated README.md to reflect all implemented features
-- Fixed import statements in documentation to use correct package name
-- Improved testing documentation with Bun-specific commands
+- Bump version to 2.7.6-alpha.16 by @beshkenadze
 
-### Changed
-- Clarified that law citations, journal citations, and HTML annotation are fully implemented
-- Updated repository URLs to point to correct GitHub repository
-- Enhanced API documentation with new citation types and utility functions
+- Clean up repository by removing debug and temporary files by @beshkenadze
 
-### Note
-- This is an alpha prerelease with documentation updates while maintaining version parity with Python eyecite 2.7.6
+- Move porting docs to docs directory by @beshkenadze
 
-## [2.7.6] - 2024-01-14
+- Add CLAUDE.md to .gitignore by @beshkenadze
 
-### Added
-- Initial TypeScript port of eyecite Python library
-- Complete feature parity with Python version 2.7.6
-- Support for all citation types:
-  - Full case citations
-  - Short case citations
-  - Supra citations
-  - Id citations
-  - Law citations (statutes)
-  - Journal citations
-  - Reference citations
-- HTML annotation support
-- Custom tokenizer extensions
-- Advanced citation filtering and disambiguation
-- Date range validation
-- Comprehensive test suite with 151 tests
+- Migrate NOMINATIVE_REPORTER_OVERLAPS and UPDATE_GUIDE documentation to porting directory by @beshkenadze
 
-### Changed
-- Ported from Python to TypeScript with modern ES modules
-- Uses Bun for package management and testing
-- Improved performance with optimized regex patterns
+- Remove temporary type declarations for @beshkenadze/eyecite by @beshkenadze
 
-### Technical Details
-- Full support for reporters-db and courts-db data
-- Parallel citation detection with metadata sharing
-- Nested parenthetical handling
-- HTML markup preservation during annotation
-- Year range support (e.g., "1982-83")
-- Compatible with Node.js 18+
+- Add ANNOTATION_README.md to document the annotation system features and usage by @beshkenadze
+
+- Update issue templates and enhance README with new sections and badges by @beshkenadze
+
+- Bump version to 2.7.6-alpha.20 by @beshkenadze
+
+
+### ⚡ Features
+
+- Add GitHub Actions workflows for CI/CD by @beshkenadze
+
+- Add GitHub Actions workflows and improve repository setup by @beshkenadze
+
+- Restore linting step in CI workflow by @beshkenadze
+
+- Enhance GitHub Actions release workflow with GitHub Packages support by @beshkenadze
+
+- Enhance TypeScript citation parsing with comprehensive fixes by @beshkenadze
+
+- Add Restatement citation support and fix remaining test failures by @beshkenadze
+
+- Add support for DOL Opinion Letter citations by @beshkenadze
+
+- Export DOLOpinionCitation from main index by @beshkenadze
+
+- Export missing types and classes from index by @beshkenadze
+
+- Improve Id citation regex and add comprehensive tests by @beshkenadze
+
+- Add GitHub issue templates by @beshkenadze
+
+- Implement comprehensive Id. citation resolution support by @beshkenadze
+
+- Implement comprehensive multiple section parsing and fix law citation issues by @beshkenadze
+
+
+### 🐛 Bug Fixes
+
+- Resolve final linting errors for CI pipeline by @beshkenadze
+
+- Disable TypeScript checking in CI to resolve build failures by @beshkenadze
+
+- Implement missing fromMatch methods in token classes to enable citation parsing by @beshkenadze
+
+- Resolve all test failures by fixing token creation pipeline by @beshkenadze
+
+- Resolve TypeScript errors in clean.ts DOM handling by @beshkenadze
+
+- Resolve remaining test failures and improve citation parsing accuracy by @beshkenadze
+
+- Repair GitHub Actions release workflow by @beshkenadze
+
+- Improve plaintiff extraction for abbreviated case names by @beshkenadze
+
+- Handle em-dash and en-dash in pin cite ranges  by @beshkenadze
+
+- Update release workflow to use correct package name and add bun by @beshkenadze
+
+- Resolve nested subsection parsing for patterns like 501(c)(3) by @beshkenadze
+
+- Correct plaintiff extraction for citations within text by @beshkenadze
+
+
+### 📚 Documentation
+
+- Update README.md with comprehensive installation guide and remove eyecite-ts references by @beshkenadze
+
+- Update README badges by @beshkenadze
+
+- Enhance README and add ROADMAP.md for project status and future goals by @beshkenadze
+
+
+### 🧪 Testing
+
+- Add comprehensive tests for Id citation extraction by @beshkenadze
+
+
+---
+Generated by [git-cliff](https://github.com/orhun/git-cliff).
