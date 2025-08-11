@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### CRITICAL
+
+- Stop infinite changelog loop - only run on tags/releases [skip ci] by @beshkenadze
+
+
 ### ⚙️ Miscellaneous Tasks
 
 - Add bump scripts to package.json by @beshkenadze
@@ -31,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### 📚 Documentation
+
+- Update CHANGELOG.md
 
 - Update CHANGELOG.md
 
