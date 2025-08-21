@@ -5,7 +5,12 @@ All notable changes to eyecite-js will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.7.6-alpha.27] - 2025-08-21
+
+### CRITICAL
+
+- Stop infinite changelog loop - only run on tags/releases [skip ci] by @beshkenadze
+
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -20,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Integrate git-cliff for automated changelog generation by @beshkenadze
 
+- Add C.F.R. part/section separation support by @beshkenadze
+
 
 ### 🐛 Bug Fixes
 
@@ -31,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### 📚 Documentation
+
+- Update CHANGELOG.md
 
 - Update CHANGELOG.md
 
