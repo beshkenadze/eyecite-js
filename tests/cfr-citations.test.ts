@@ -39,7 +39,8 @@ describe('C.F.R. Citation Parsing', () => {
     expect(citations[0]).toBeInstanceOf(FullLawCitation)
     expect(citations[0].groups.reporter).toBe('C.F.R.')
     expect(citations[0].groups.chapter).toBe('29')
-    expect(citations[0].groups.section).toBe('778.217')
+    expect(citations[0].groups.part).toBe('778')
+    expect(citations[0].groups.section).toBe('217')
   })
   
   test('should parse multiple C.F.R. sections as single citation', () => {
@@ -72,7 +73,8 @@ describe('C.F.R. Citation Parsing', () => {
     expect(citations[1]).toBeInstanceOf(FullLawCitation)
     expect(citations[1].groups.reporter).toBe('C.F.R.')
     expect(citations[1].groups.chapter).toBe('29')
-    expect(citations[1].groups.section).toBe('778.217')
+    expect(citations[1].groups.part).toBe('778')
+    expect(citations[1].groups.section).toBe('217')
   })
   
   test('should parse C.F.R. after semicolon correctly', () => {
@@ -83,7 +85,8 @@ describe('C.F.R. Citation Parsing', () => {
     expect(citations[0]).toBeInstanceOf(FullLawCitation)
     expect(citations[0].groups.reporter).toBe('C.F.R.')
     expect(citations[0].groups.chapter).toBe('29')
-    expect(citations[0].groups.section).toBe('541.2')
+    expect(citations[0].groups.part).toBe('541')
+    expect(citations[0].groups.section).toBe('2')
     
     // Ensure no false U.S.C. citation is created for "29"
     const span = citations[0].span()

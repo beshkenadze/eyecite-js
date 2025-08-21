@@ -489,7 +489,7 @@
             "name": "Code of Federal Regulations",
             "regexes": [
                 "(?P<chapter>\\d+) $reporter,? $section_marker_multiple $law_section_multiple",
-                "(?P<chapter>\\d+) $reporter,? $section_marker $law_section"
+                "(?P<chapter>\\d+) $reporter,? $section_marker (?P<part>\\d+)\\.(?P<section>\\d+(?:\\.\\d+)*)"
             ],
             "start": null,
             "variations": [

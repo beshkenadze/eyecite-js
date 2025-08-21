@@ -134,7 +134,21 @@ export class FullLawCitation extends FullCitation {
     return this.groups.reporter || ''
   }
 
+  get part(): string {
+    return this.groups.part || ''
+  }
+
   get section(): string {
+    // For backward compatibility, if we have separate part and section,
+    // return them combined (e.g., "778.113")
+    if (this.groups.part && this.groups.section) {
+      return `${this.groups.part}.${this.groups.section}`
+    }
+    return this.groups.section || ''
+  }
+
+  get sectionOnly(): string {
+    // Returns just the section part (e.g., "113" from "778.113")
     return this.groups.section || ''
   }
 

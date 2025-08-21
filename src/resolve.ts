@@ -297,7 +297,21 @@ export function resolveIdCitationWithSectionSubstitution(
         )
         
         // Copy all the groups and update the section
-        substitutedCitation.groups = { ...fullCite.groups, section: sectionMatch[1] }
+        // Handle part.section format (e.g., "778.114(a)(5)" -> part: "778", section: "114(a)(5)")
+        const newSection = sectionMatch[1]
+        const partSectionMatch = newSection.match(/^(\d+)\.(.+)$/)
+        
+        if (partSectionMatch) {
+          // New section has part.section format
+          substitutedCitation.groups = {
+            ...fullCite.groups,
+            part: partSectionMatch[1],
+            section: partSectionMatch[2],
+          }
+        } else {
+          // New section is just a section (keep existing part if any)
+          substitutedCitation.groups = { ...fullCite.groups, section: newSection }
+        }
         
         // Copy span information
         substitutedCitation.spanStart = fullCite.spanStart

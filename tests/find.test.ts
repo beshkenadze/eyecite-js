@@ -1191,7 +1191,8 @@ describe('Find Citations', () => {
           groups: {
             chapter: '29',
             reporter: 'C.F.R.',
-            section: '778.113',
+            part: '778',
+            section: '113',
           },
         },
       ])
