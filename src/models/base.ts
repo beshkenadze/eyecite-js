@@ -127,6 +127,7 @@ export class Metadata {
   journalName?: string
   reporter?: string
   chapter?: string
+  part?: string
   section?: string
   title?: string
   page?: string

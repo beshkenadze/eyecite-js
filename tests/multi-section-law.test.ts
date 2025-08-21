@@ -59,7 +59,9 @@ describe('Multi-section law citations', () => {
     expect(citations.length).toBe(1)
     
     const citation = citations[0] as FullLawCitation
-    expect(citation.metadata.section).toBe('778.113')
+    expect(citation.metadata.section).toBe('113')
+    expect(citation.part).toBe('778')  // Check new part getter
+    expect(citation.section).toBe('778.113')  // Check combined getter
   })
 
   test('should handle section ranges', () => {

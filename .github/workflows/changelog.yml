@@ -31,21 +31,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Commit and Push Changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+      # Option 1: Use web-flow signed commits (Recommended)
+      - name: Commit and Push Changes (Verified)
+        uses: swinton/commit@v2.0.0
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
-          commit_message: "docs: update CHANGELOG.md"
-          file_pattern: CHANGELOG.md
-          # Use human-readable bot name
-          commit_user_name: Eyecite Bot
-          commit_user_email: eyecite-bot@users.noreply.github.com
-          commit_author: Eyecite Bot <eyecite-bot@users.noreply.github.com>
-          # Skip CI to prevent recursive runs
-          commit_options: '--no-verify --signoff'
-          add_options: '-u'
-          push_options: '--force-with-lease'
-          skip_dirty_check: false
-          skip_fetch: false
-          skip_checkout: false
-          disable_globbing: false
-          create_branch: false
+          files: |
+            CHANGELOG.md
+          commit-message: "docs: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]"
+          ref: refs/heads/main
+          
+      # Option 2: Alternative using EndBug action (fallback)
+      # - name: Commit and Push Changes
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     message: 'docs: update CHANGELOG.md for ${{ github.ref_name }} [skip ci]'
+      #     add: 'CHANGELOG.md'
+      #     default_author: github_actions
+      #     push: true
+      #     github_token: ${{ secrets.PAT_TOKEN }}
