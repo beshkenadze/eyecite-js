@@ -5,7 +5,7 @@ All notable changes to eyecite-js will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.7.6-alpha.27] - 2025-08-21
+## [2.7.6-alpha.28] - 2025-08-21
 
 ### CRITICAL
 
@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add bump scripts to package.json by @beshkenadze
 
 - Bump version to 2.7.6-alpha.27 by @beshkenadze
+
+- Bump version to 2.7.6-alpha.28 by @beshkenadze
 
 
 ### ⚡ Features
