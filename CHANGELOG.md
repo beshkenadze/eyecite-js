@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add bump scripts to package.json by @beshkenadze
 
+- Bump version to 2.7.6-alpha.27 by @beshkenadze
+
 
 ### ⚡ Features
 
